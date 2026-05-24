@@ -1,0 +1,28 @@
+{
+  "name": "tali",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Unified onchain + offchain money tool for non-trader crypto-active users",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev:skill": "pnpm --filter @tali/skill dev",
+    "dev:web": "pnpm --filter @tali/web dev",
+    "db:migrate": "pnpm --filter @tali/skill db:migrate",
+    "db:generate": "pnpm --filter @tali/skill db:generate",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "eslint": "^9.12.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.2",
+    "typescript-eslint": "^8.8.0"
+  }
+}

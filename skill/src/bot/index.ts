@@ -2,6 +2,7 @@ import { Bot } from 'grammy';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
 import { handleStart } from './commands/start.js';
+import { handleNetworth } from './commands/networth.js';
 
 export const bot = new Bot(env.TELEGRAM_BOT_TOKEN);
 
@@ -11,6 +12,7 @@ bot.catch((err) => {
 
 // Command registry — append new commands here as they're added.
 bot.command('start', handleStart);
+bot.command('networth', handleNetworth);
 
 bot.command('help', async (ctx) => {
   await ctx.reply(

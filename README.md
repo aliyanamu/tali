@@ -47,4 +47,4 @@ TBD — will be open-source by submission per hackathon requirements.
 
 ## One-line pitch
 
-*An AI agent that watches your crypto wallets and your bank accounts, threads them into one ledger, and acts on simple rules you set — all signed by its own on-chain identity.*
+*An AI agent that watches your crypto wallets continuously, threads in the bank statements you log or upload, and acts on simple rules you set — all signed by its own on-chain identity.*

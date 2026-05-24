@@ -170,6 +170,15 @@ Working checklist with check-as-you-go status: `../../todo.md` "Submission check
 
 ---
 
+## Next-session queue (deferred from 2026-05-24 work session)
+
+When the next work session begins (after `pnpm install` + Drizzle migrations + Telegram bot setup), the queued artifacts I should produce on request:
+
+1. **Goldsky Mirror pipeline config** — YAML/dashboard steps for a Transfer-event indexer covering USDT, USDC, USDY, mETH on Mantle Mainnet, filtered to user wallet addresses, delivering to the `/webhooks/goldsky` endpoint with HMAC signing.
+2. **Mantle Explorer token-address verification checklist** — exact addresses to confirm on mantlescan.xyz for USDT (bridged), USDC (bridged), mETH (Mantle staked ETH), USDY (Ondo). Currently `skill/src/lib/tokens.ts` has placeholders marked TODO.
+
+Both are queued in `../../todo.md` "Next session pickup" section.
+
 ## Decision principles (resolve disputes against these)
 
 1. **Mufidah's daily-use happiness > judges' applause.** If something polishes the demo but Mufidah wouldn't use it daily, deprioritize.

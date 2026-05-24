@@ -2,13 +2,13 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
+import { handleGoldskyWebhook } from './goldsky.js';
 
 export const app = new Hono();
 
 app.get('/health', (c) => c.json({ status: 'ok' }));
 
-// Webhook routes are registered in src/webhooks/* — wired into here as they're added.
-// Goldsky webhook will land at POST /webhooks/goldsky.
+app.post('/webhooks/goldsky', handleGoldskyWebhook);
 
 export async function startWebhookServer(): Promise<void> {
   await new Promise<void>((resolve) => {

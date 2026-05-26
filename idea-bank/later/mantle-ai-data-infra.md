@@ -1,6 +1,6 @@
 # Cheap, AI-aware data infrastructure for Mantle
 
-- **Logged:** 2026-05-24 (moved from `../../../../../context/parking_lot.md` on 2026-05-26)
+- **Logged:** 2026-05-24
 - **Category:** later (project-level pivot — reviewed well after 2026-06-15)
 - **Status:** parked — not pursued
 
@@ -44,4 +44,4 @@ An affordable open-source indexing + monitoring layer for Mantle, with an AI que
 ## Related artifacts
 
 - Research summary on Alchemy webhook + Mantle costs (currently in chat history; can be re-run if needed)
-- Tali's `13_project_locked.md` "Cost-aware infrastructure stack" section — these stack decisions inform the future project
+- Tali's locked-spec "Cost-aware infrastructure stack" section — these stack decisions inform the future project

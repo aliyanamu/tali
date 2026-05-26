@@ -29,8 +29,8 @@ _(empty)_
 - [Reminders & Notification Center](next-month/reminders-and-notification-center.md) — user-set bill/date reminders + a categorized notification center with Personal / System tabs.
 
 ### later
-- [Cheap, AI-aware Mantle data infrastructure](later/mantle-ai-data-infra.md) — affordable open-source indexing + monitoring layer for Mantle with an AI query/anomaly surface. _(Project-level pivot, moved from `../../../../context/parking_lot.md` on 2026-05-26.)_
+- [Cheap, AI-aware Mantle data infrastructure](later/mantle-ai-data-infra.md) — affordable open-source indexing + monitoring layer for Mantle with an AI query/anomaly surface. _(Project-level pivot.)_
 
-## Relationship to the old parking lot
+## Pivot ideas (strict rule #1)
 
-`../../../../context/parking_lot.md` previously held project-level pivot ideas (strict rule #1). Its content now lives in `later/` here. The parking-lot file remains as a redirect pointer so the strict-rule routing path still resolves. New pivot ideas can land here in `later/`; new feature ideas in `next-week/` or `next-month/`.
+Project-level pivots and major reframes land in `later/`, not in active scope — no re-lock discussions until after 2026-06-15. Feature ideas go in `next-week/` or `next-month/`.

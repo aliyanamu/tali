@@ -6,14 +6,24 @@ Visual mockups, UI explorations, and design references for Tali.
 
 For **rough wireframes and flow diagrams in markdown**: handled here in this repo via Mermaid + ASCII (see `../workflow.md` and `../architecture.md` for examples).
 
-For **polished UI mockups**: use **Claude Design** (Anthropic's design tool, research preview). Generate mockups there, export the artifacts (PNG / SVG / Figma link), and drop them in this folder with a short markdown note explaining what each shows.
+For **polished UI mockups**: use **Claude Design** (Anthropic's design tool, research preview). Generate mockups there, export the artifacts (PNG / SVG / Figma link), and drop them in the right surface folder with a short markdown note explaining what each shows.
 
-Suggested folder organization once mockups exist:
-- `01-onboarding-screens.md` (or `.png`)
-- `02-net-worth-dashboard.md`
-- `03-rule-setup-flow.md`
-- `04-activity-feed.md`
-- `05-bank-import-flow.md`
+## Folder layout — split by surface
+
+Tali has two surfaces (see `../../context/13_project_locked.md`), designed separately:
+
+- **`telegram/`** — the conversational surface (RealClaw's Telegram, or grammY fallback). Chat flows, inline-button patterns, NL interactions. This is the *primary* interface for the Agentic Economy track.
+  - `conversation-flows.md` — target chat interactions, one per locked must-have
+
+- **`web-app/`** — the calm desktop dashboard (Next.js on Vercel, Privy auth). The live-streamable surface + daily-use net-worth screen. Reads the same data layer as TaliSkill.
+  - `figma-make-prompt.md`, `bolt-refinement-round1.md`, `bolt-refinement-round2.md` — UI generation prompts + iteration notes
+
+Suggested web-app files once mockups exist:
+- `web-app/01-onboarding-screens.md` (or `.png`)
+- `web-app/02-net-worth-dashboard.md`
+- `web-app/03-rule-setup-flow.md`
+- `web-app/04-activity-feed.md`
+- `web-app/05-bank-import-flow.md`
 
 ## Design references (north stars)
 

@@ -7,7 +7,8 @@ High-level view of how Tali's components fit together. Source-of-truth product s
 ```mermaid
 graph TD
     subgraph Interface
-        TG[Telegram bot<br/>RealClaw surface]
+        TG[Telegram bot<br/>grammY · chat surface]
+        CLI[tali-cli<br/>RealClaw skill · OpenClaw]
         WEB[Desktop dashboard<br/>Next.js · Privy auth]
     end
 
@@ -21,7 +22,7 @@ graph TD
     subgraph Data
         PG[(Postgres<br/>unified event ledger<br/>offchain log)]
         GS[Goldsky Mirror<br/>event webhooks]
-        ALC[Alchemy RPC<br/>state reads + tx sign]
+        ALC[Alchemy RPC<br/>state reads]
     end
 
     subgraph Chain
@@ -32,6 +33,7 @@ graph TD
     end
 
     TG --> SKILL
+    CLI --> SKILL
     WEB --> PG
     SKILL --> NL
     SKILL --> RULES
@@ -82,10 +84,11 @@ Full security and failure-mode discussion: `../../context/13_project_locked.md` 
 
 | Component | What it owns | What it never does |
 |---|---|---|
-| **Telegram bot (RealClaw)** | User-facing chat surface, NL input, notifications | Sign transactions directly (delegates to Privy); store secrets |
+| **Telegram bot (grammY)** | User-facing chat surface, NL input, push notifications | Sign transactions directly (delegates to Privy); store secrets |
+| **tali-cli (RealClaw skill)** | OpenClaw-registered skill entry point; exposes `networth`, `wallet`, `log`, `rules` to any RealClaw-compatible agent | Hold keys; bypass user authorization |
 | **TaliSkill (OpenClaw Skill)** | Rule engine, reconciliation, ledger writes, agent decisions | Hold keys; bypass user authorization |
 | **Goldsky Mirror** | Real-time event delivery via webhooks, re-org handling, retry | Read state on demand (that's RPC's job) |
-| **Alchemy RPC** | Balance queries, transaction submission via Privy, fallback reads | Watch events (Goldsky's job) |
+| **Alchemy RPC** | Balance queries, read state on demand, RPC transport for Privy tx submission | Watch events (Goldsky's job); sign transactions (Privy's job) |
 | **Privy** | Non-custodial wallet keys (split between secure enclave + user auth) | Make decisions; act without explicit user/contract auth |
 | **AutonomousRule.sol** | Storing rule configs on-chain, executing constrained actions, emitting attestations | Hold rule logic; act without agent invocation |
 | **ERC-8004 NFT** | Agent identity, action attestation log, public reputation surface | Hold funds; control wallet authority |

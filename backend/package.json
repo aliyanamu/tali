@@ -1,5 +1,5 @@
 {
-  "name": "@tali/skill",
+  "name": "@tali/backend",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -9,7 +9,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file=.env src/db/migrate.ts"
+    "db:migrate": "tsx --env-file=.env src/db/migrate.ts",
+    "db:reset": "tsx --env-file=.env src/db/reset.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.2",

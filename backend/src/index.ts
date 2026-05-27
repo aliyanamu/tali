@@ -1,6 +1,6 @@
 import { logger } from './lib/logger.js';
 import { startBot } from './bot/index.js';
-import { startWebhookServer } from './webhooks/server.js';
+import { startWebhookServer } from './webhook/server.js';
 
 async function main(): Promise<void> {
   logger.info('Tali starting...');

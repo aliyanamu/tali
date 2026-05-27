@@ -1,15 +1,11 @@
-import { env } from './env.js';
-import { logger } from './logger.js';
-
 type CacheEntry = { price: number; fetchedAt: number };
 const cache = new Map<string, CacheEntry>();
-const TTL_MS = 5 * 60 * 1000; // 5 min
+const TTL_MS = 5 * 60 * 1000;
 
-/**
- * Fetch IDR prices for a list of CoinGecko IDs, with in-memory caching.
- * Returns a record keyed by coingeckoId. Missing prices default to 0 (logged).
- */
-export async function getPricesInIdr(coingeckoIds: string[]): Promise<Record<string, number>> {
+export async function getPricesInIdr(
+  coingeckoIds: string[],
+  apiKey: string,
+): Promise<Record<string, number>> {
   const now = Date.now();
   const result: Record<string, number> = {};
   const stale: string[] = [];
@@ -28,7 +24,7 @@ export async function getPricesInIdr(coingeckoIds: string[]): Promise<Record<str
   const url = new URL('https://api.coingecko.com/api/v3/simple/price');
   url.searchParams.set('ids', stale.join(','));
   url.searchParams.set('vs_currencies', 'idr');
-  url.searchParams.set('x_cg_demo_api_key', env.COINGECKO_API_KEY);
+  url.searchParams.set('x_cg_demo_api_key', apiKey);
 
   try {
     const res = await fetch(url);
@@ -40,11 +36,11 @@ export async function getPricesInIdr(coingeckoIds: string[]): Promise<Record<str
       cache.set(id, { price, fetchedAt: now });
       result[id] = price;
       if (price === 0) {
-        logger.warn({ coingeckoId: id }, 'CoinGecko returned zero price');
+        console.warn(`[prices] zero price for ${id}`);
       }
     }
   } catch (err) {
-    logger.error({ err, stale }, 'CoinGecko price fetch failed');
+    console.error('[prices] CoinGecko fetch failed', err);
     for (const id of stale) {
       // Use stale cache value if available, else 0
       result[id] = cache.get(id)?.price ?? 0;

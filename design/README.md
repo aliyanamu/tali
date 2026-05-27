@@ -29,8 +29,14 @@ Suggested web-app files once mockups exist:
 
 - **[Kubera Wealth Tracker](https://www.kubera.com/wealth-tracker)** — emotional register: "clarity, calm, control." Source of much of Tali's visual language tone.
 - **[Monai](https://get-monai.app/)** — clean expense tracker UX, two-mode logging pattern that inspired Tali's onchain + offchain split.
+- **[YNAB](https://www.ynab.com)** — gold standard for intentional budgeting UX. Zero-based budgeting model; every dollar assigned a job. Reference for Tali's category and log flows, and the "calm but strict" interaction tone.
+- **[Simplifi by Quicken](https://www.quicken.com/products/simplifi/)** — closest product to what Tali is building: spending plan + net worth in one screen, direct bank sync, minimal cognitive load. Reference for information hierarchy and the net-worth + activity feed layout.
+- **[Monarch Money](https://www.monarch.com/)** — best-in-class bank sync UX and multi-account aggregation. Reference for how to present connected accounts and handle sync states gracefully.
+- **[PocketGuard](https://pocketguard.com/)** — "In My Pocket" number (spendable after bills + goals) is the right framing for Tali's daily-use headline. Reference for single-number clarity on the dashboard.
 - **[Privy](https://privy.io)** — for non-custodial onboarding UX (passkey / OAuth / email magic link).
 - **MetaMask Portfolio** — for multi-wallet visibility patterns (what to keep, what to discard).
+
+> **Note on bank sync:** YNAB, Simplifi, Monarch, and PocketGuard all sync directly to bank accounts — no statement import needed. Tali's MVP uses manual NL logging + CSV import (no direct bank API yet). These references show the *target state* for UX, not current implementation.
 
 ## Design principles for Tali
 

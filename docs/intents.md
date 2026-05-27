@@ -106,7 +106,7 @@ should recognize the upload intent now and reply gracefully if not yet built.
 ### `help` / `start`
 Onboarding + capability list.
 - **Triggers:** "/start", "/help", "what can you do", "apa yang bisa kamu lakukan"
-- **Action:** intro + example sentences. `/start` already exists in `skill/src/bot/commands/`.
+- **Action:** intro + example sentences. `/start` already exists in `backend/src/bot/commands/`.
 - **Confirm?** No.
 
 ---

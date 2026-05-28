@@ -3,7 +3,7 @@
 ## What this is
 Tali is a unified onchain + offchain money tool for non-trader crypto-active users. Hackathon project for Mantle Turing Test Hackathon 2026 (Phase 2 "AI Awakening"). Deadline 2026-06-15 15:59.
 
-**Branch: `feat/realclaw-integration`** — RealClaw is the automation engine. The OpenClaw skill surface (`tali-cli`) has been removed. Tali's Telegram bot is the user-facing layer; RealClaw handles all DeFi automation (yield, DCA, swaps) via Byreal. See `feat/week-1-scaffold` for the standalone skill version.
+**Branch: `feat/realclaw-integration`** — RealClaw is the automation engine. The OpenClaw skill surface (`tali-cli`) has been removed. Tali's Telegram bot is the user-facing layer; RealClaw handles all DeFi automation (yield, DCA, swaps) via Byreal. See `feat/openclaw-integration` for the standalone skill version.
 
 Locked spec: `../context/13_project_locked.md` is the source of truth for product scope, architecture, and track positioning. **Always read it before suggesting product changes.**
 
@@ -16,7 +16,7 @@ Locked spec: `../context/13_project_locked.md` is the source of truth for produc
   - `backend/src/wallet/privy.ts` — wallet creation + tx signing via Privy server SDK
   - `backend/src/realclaw/` — **[TODO]** RealClaw integration: trigger strategies, poll status, receive events
   - `backend/drizzle/` — generated SQL migrations (run via `pnpm db:migrate`)
-  - ~~`backend/src/cli/`~~ — removed; standalone skill lives on `feat/week-1-scaffold`
+  - ~~`backend/src/cli/`~~ — removed; standalone skill lives on `feat/openclaw-integration`
   - ~~`backend/skills/`~~ — removed; OpenClaw registration not needed when RealClaw is the agent
 - `contracts/` — **week 2, not yet created** — will hold Foundry project: `AutonomousRule.sol` + ERC-8004 NFT
 - `web/` — **week 2, not yet created** — will hold Next.js desktop dashboard (Privy auth)

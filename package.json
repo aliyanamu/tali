@@ -10,7 +10,7 @@
   "scripts": {
     "dev:backend": "pnpm --filter @tali/backend dev",
     "dev:web": "pnpm --filter @tali/web dev",
-    "dev:cli": "echo 'CLI removed in this branch — use feat/week-1-scaffold for standalone skill'",
+    "dev:cli": "echo 'CLI removed in this branch — use feat/openclaw-integration for standalone skill'",
     "db:migrate": "pnpm --filter @tali/backend db:migrate",
     "db:generate": "pnpm --filter @tali/backend db:generate",
     "db:reset": "pnpm --filter @tali/backend db:reset",

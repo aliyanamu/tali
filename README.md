@@ -25,14 +25,14 @@ No tool on earth links these two events. The trail vanishes. Tali lets you log i
 ### 3. The Agency Problem
 Tracking is passive. Tali is active.
 
-Set a rule: *"whenever USDT comes into my wallet, save 10% as USDY."* Tali watches your wallet continuously via Goldsky webhooks, executes the swap on Solana via RealClaw when triggered, and attests each action under its own on-chain identity (ERC-8004 NFT). Every autonomous action is signed, verifiable, and permanent — not stored in a SaaS database that can disappear.
+Set a rule: *"whenever USDT comes into my wallet, save 10% as USDY."* Tali watches your wallet continuously via Goldsky webhooks, executes the swap on Solana when triggered, and attests each action under its own on-chain identity (ERC-8004 NFT). Every autonomous action is signed, verifiable, and permanent — not stored in a SaaS database that can disappear.
 
 ```mermaid
 graph LR
     A[Your crypto wallets] -->|Tali watches| C
     B[Your bank accounts / IDR] -->|You log<br/>or import CSV| C
     C[Tali unified ledger] --> D[Calm dashboard]
-    C --> E[Autonomous rules<br/>RealClaw executes on Solana]
+    C --> E[Autonomous rules<br/>act on your behalf]
     E -->|attested on Solana| F[ERC-8004 identity NFT]
 ```
 
@@ -56,7 +56,7 @@ graph LR
 
 ## Built on
 
-- **RealClaw** (OpenClaw-based agent framework with Telegram + Privy — the automation engine in this branch)
+- **RealClaw** (OpenClaw-based agent framework with Telegram + Privy)
 - **Solana** (primary chain — `AutonomousRule.sol` + ERC-8004 NFT contracts)
 - **Ondo USDY** (tokenized US Treasuries, autonomous savings target)
 - **Goldsky Mirror** (push-based real-time event delivery, HMAC-verified webhooks)
@@ -78,7 +78,7 @@ graph LR
 
 Tali's moat, in priority order:
 1. **P2P trade reconciliation** — no existing tool models this problem, let alone solves it
-2. **Agentic rules engine** — moves real money autonomously via RealClaw, attested onchain via ERC-8004
+2. **Agentic rules engine** — moves real money autonomously, attested onchain via ERC-8004
 3. **SEA-first, Indonesia-first** — structural advantage while Western tools explicitly exclude this market
 4. **Data sovereignty** — self-sovereign encrypted storage; the Mint-proof guarantee no traditional fintech can offer
 5. **ERC-8004 on-chain agent identity** — every autonomous action is publicly verifiable, not stored in a private SaaS database

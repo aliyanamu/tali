@@ -10,6 +10,12 @@ What we're shipping, when, and why. Single source of truth for scope decisions d
 
 If that's not true by 2026-06-15, nothing else matters.
 
+## The three core problems (primary objectives)
+
+1. **P2P reconciliation** ← hero feature. When Mufidah sells USDT via P2P, both sides (USDT outflow onchain + IDR inflow to bank) link as one event in the unified ledger. No other product models this problem.
+2. **Unified visibility** — Solana wallets + bank accounts (BCA, GoPay, cash) in one IDR net worth view. The complete picture, not two disconnected screens.
+3. **Autonomous agency** — plain-language rules trigger RealClaw DeFi strategies on Solana, attested by ERC-8004 NFT. Agent acts without user intervention after initial setup.
+
 ---
 
 ## Three-week roadmap
@@ -51,7 +57,7 @@ gantt
 
 ## MVP scope (what ships by 2026-06-15)
 
-### Visibility (week 1)
+### P2P reconciliation + Visibility (week 1)
 
 ```mermaid
 mindmap
@@ -126,7 +132,7 @@ mindmap
 - Trading / portfolio strategies (we're not a trader's tool)
 - Custodial features (everything user-held via Privy)
 - Bank-connect auto-sync via Brick API (v2 — removes daily logging fatigue)
-- Multi-chain action (Mantle-only at MVP; watch other EVM read-only if time permits)
+- Multi-chain action (Solana primary at MVP via RealClaw; watch EVM wallets read-only via Goldsky if time permits)
 - Beneficiary / dead-man switch (Kubera-borrow for v2)
 - Multiple rules per user (single rule at MVP; multi-rule library is v1.5)
 - ERC-4337 session keys (Option B pre-authorized contract at MVP; session keys v2)

@@ -12,8 +12,8 @@ For **polished UI mockups**: use **Claude Design** (Anthropic's design tool, res
 
 Tali has two surfaces (see `../../context/13_project_locked.md`), designed separately:
 
-- **`telegram/`** — the conversational surface (RealClaw's Telegram, or grammY fallback). Chat flows, inline-button patterns, NL interactions. This is the *primary* interface for the Agentic Economy track.
-  - `conversation-flows.md` — target chat interactions, one per locked must-have
+- **`openclaw/`** — the conversational surface (Claude agent brain via OpenClaw, tali-cli + byreal-cli as skills). NL interaction flows, confirmation patterns. This is the *primary* interface for the Agentic Economy track.
+  - `conversation-flows.md` — target interactions, one per locked must-have
 
 - **`web-app/`** — the calm desktop dashboard (Next.js on Vercel, Privy auth). The live-streamable surface + daily-use net-worth screen. Reads the same data layer as TaliSkill.
   - `figma-make-prompt.md`, `bolt-refinement-round1.md`, `bolt-refinement-round2.md` — UI generation prompts + iteration notes

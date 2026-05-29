@@ -1,9 +1,9 @@
-# Telegram conversation flows
+# OpenClaw conversation flows
 
-What Tali looks like as actual chat on Telegram (RealClaw's surface, or the grammY
-fallback bot). These are the target interactions for the conversational surface —
-plain chat bubbles, sometimes with inline buttons. The web-app counterpart lives
-in `../web-app/`.
+What Tali looks like as actual interactions through OpenClaw (Claude as agent brain,
+tali-cli + byreal-cli as skills). These are the target interactions for the
+conversational surface — plain natural language, sometimes with confirmation prompts.
+The web-app counterpart lives in `../web-app/`.
 
 Design register: **clarity, calm, control.** Plain sentences work; commands are
 optional shortcuts. Tali asks before money moves (except inside a pre-authorized

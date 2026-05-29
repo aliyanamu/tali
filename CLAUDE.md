@@ -62,6 +62,7 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 ## Track positioning
 
 - Primary: **Agentic Economy Path B (RealClaw Real-Life Expansion)** — Tali extends Byreal's DeFi agent into real-life financial management
+- Category: **Personal CFO Agent** (explicitly listed under Encouraged Directions B)
 - Locked-in: 20 Project Deployment Award
 
 ## Strict rules

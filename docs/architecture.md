@@ -50,6 +50,23 @@ graph TD
 
 ---
 
+## Chain separation: Mantle vs Solana
+
+Tali spans two chains with a clean division — you never cross the boundary in code.
+
+| | Mantle | Solana |
+|---|---|---|
+| **Purpose** | "Bank account" layer — balances, rules, identity | "DeFi execution" layer — yield, DCA, swaps |
+| **What lives here** | Watched wallets, MNT/USDT balances, `AutonomousRule.sol`, ERC-8004 NFT | Byreal CLMM positions, LP tokens |
+| **Who reads it** | `tali-cli` via any Mantle RPC URL (Alchemy, Chainstack, public, etc.) | `byreal-cli` — internally managed, you don't wire it |
+| **Who writes to it** | Privy wallet (user-signed), `AutonomousRule.sol` | `byreal-cli` keypair (`~/.config/byreal/keys/`) |
+| **Real-time events** | Goldsky Mirror pushes Transfer events to webhook server | Not needed — byreal-cli polls its own state |
+| **What you need to set up** | A Mantle RPC URL in `MANTLE_RPC` env var | Run `byreal-cli setup` — it handles everything |
+
+**Key rule:** Solana execution is fully encapsulated in `byreal-cli`. Tali's backend never imports a Solana library or holds a Solana RPC URL. If you need Solana state, ask `byreal-cli`.
+
+---
+
 ## Two-tier wallet model
 
 ```mermaid

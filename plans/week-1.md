@@ -11,10 +11,10 @@ Mufidah can run `tali-cli networth` and see her IDR net worth, and a `byreal-cli
 ## Done criteria for the week
 
 **Services to set up first (blockers for everything below)**
-- [ ] 🔲 Local Postgres running + `pnpm db:migrate` passes
+- [x] ✅ Local Postgres running + `pnpm db:migrate` passes
 - [ ] 🔲 Privy account + app created → `PRIVY_APP_ID`, `PRIVY_APP_SECRET`
 - [ ] 🔲 Alchemy account → `ALCHEMY_MANTLE_RPC`
-- [ ] 🔲 CoinGecko Demo API key → `COINGECKO_API_KEY`
+- [~] ~~CoinGecko Demo API key → `COINGECKO_API_KEY` — not needed, using free tier (no key required)~~
 - [ ] 🔲 Goldsky account + webhook secret → `GOLDSKY_WEBHOOK_SECRET`
 - [ ] 🔲 Anthropic API key → `ANTHROPIC_API_KEY`
 

@@ -42,3 +42,6 @@ logs/
 # Coverage
 coverage/
 .nyc_output/
+
+# Scratch
+tmp/

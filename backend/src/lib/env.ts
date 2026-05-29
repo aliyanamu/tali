@@ -1,21 +1,14 @@
 import { z } from 'zod';
 
 const EnvSchema = z.object({
-  // Telegram
-  TELEGRAM_BOT_TOKEN: z.string().min(1),
-
-  // Privy
+  // Privy (Tier 2 wallet management)
   PRIVY_APP_ID: z.string().min(1),
   PRIVY_APP_SECRET: z.string().min(1),
-
-  // Alchemy (RPC for state reads + tx submission)
-  ALCHEMY_API_KEY: z.string().min(1),
-  ALCHEMY_MANTLE_RPC: z.string().url(),
 
   // Goldsky (webhook secret for HMAC verification)
   GOLDSKY_WEBHOOK_SECRET: z.string().min(1),
 
-  // Anthropic (NL parsing + OCR)
+  // Anthropic (NL parsing, P2P intent extraction)
   ANTHROPIC_API_KEY: z.string().min(1),
 
   // CoinGecko (price data with caching)
@@ -24,8 +17,10 @@ const EnvSchema = z.object({
   // Postgres
   DATABASE_URL: z.string().min(1),
 
-  // Mantle chain config
+  // Mantle chain config (ERC-8004 NFT + on-chain attestation)
   MANTLE_CHAIN_ID: z.coerce.number().default(5000),
+  ALCHEMY_API_KEY: z.string().min(1),
+  ALCHEMY_MANTLE_RPC: z.string().url(),
   AUTONOMOUS_RULE_CONTRACT: z.string().optional(),
   ERC8004_NFT_CONTRACT: z.string().optional(),
 

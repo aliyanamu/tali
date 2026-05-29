@@ -1,7 +1,7 @@
 # Week 1 milestone — Visibility
 **Target:** 2026-05-31
 
-Mufidah can open Tali, see her net worth in IDR, and log a P2P trade from a single sentence.
+Mufidah can run `tali-cli networth` and see her IDR net worth, and a `byreal-cli` OpenClaw agent is running DeFi on Byreal.
 
 ## Status key
 - 🔲 not started
@@ -11,33 +11,31 @@ Mufidah can open Tali, see her net worth in IDR, and log a P2P trade from a sing
 ## Done criteria for the week
 
 **Services to set up first (blockers for everything below)**
-- [ ] 🔲 Telegram bot created via @BotFather → `TELEGRAM_BOT_TOKEN`
 - [ ] 🔲 Local Postgres running + `pnpm db:migrate` passes
 - [ ] 🔲 Privy account + app created → `PRIVY_APP_ID`, `PRIVY_APP_SECRET`
 - [ ] 🔲 Alchemy account → `ALCHEMY_MANTLE_RPC`
 - [ ] 🔲 CoinGecko Demo API key → `COINGECKO_API_KEY`
 - [ ] 🔲 Goldsky account + webhook secret → `GOLDSKY_WEBHOOK_SECRET`
+- [ ] 🔲 Anthropic API key → `ANTHROPIC_API_KEY`
 
-**Features**
-- [ ] 🟡 `/start` — code written; needs Privy + Postgres to test
-- [ ] 🟡 `/networth` — code written; needs Alchemy + CoinGecko + Postgres to test
-- [ ] 🟡 Goldsky webhook handler — code written; needs Goldsky pipeline deployed to receive real events
-- [ ] 🟡 `tali-cli networth <address>` — code written; needs Alchemy + CoinGecko keys to test
-- [ ] 🟡 `tali-cli wallet watch/list` — code written; needs Postgres to test
-- [ ] 🟡 `tali-cli skill` / `tali-cli catalog list` — SKILL.md registration ready; smoke-test after `npm install -g`
-- [ ] 🟡 `tali-cli log` / `tali-cli rules` — stubs written (reply "coming soon"); verify stubs respond correctly
-- [ ] 🔲 `/log` — NL parser recognizes `log_p2p_trade` intent, creates two-sided ledger event
-- [ ] 🔲 Auto-link: Goldsky-detected USDT outflow matched to a P2P trade log within a time window
-- [ ] 🔲 `add_watched_wallet` — user can register a Tier-1 address via chat
-- [ ] 🔲 Goldsky Mirror pipeline deployed (Transfer events for USDT/USDC/mETH/USDY on Mantle)
+**byreal-cli OpenClaw agent**
+- [ ] 🔲 `npm install -g @byreal-io/byreal-cli`
+- [ ] 🔲 `byreal-cli setup` — Solana wallet configured
+- [ ] 🔲 `npx skills add byreal-git/byreal-agent-skills` — skill installed in Claude
+- [ ] 🔲 Smoke test: `byreal-cli pools list` returns live data
+- [ ] 🔲 Smoke test: `byreal-cli wallet balance` shows Solana balance
+
+**tali-cli**
+- [ ] 🟡 `tali-cli networth --wallet <address>` — code written; needs Alchemy + CoinGecko keys to test live
+- [ ] 🟡 `tali-cli skill` — SKILL.md registration ready; smoke-test after install
 - [ ] 🔲 Token addresses in `tokens.ts` verified on mantlescan.xyz
+- [ ] 🔲 Goldsky Mirror pipeline deployed (Transfer events on Mantle for user wallet)
+- [ ] 🔲 Goldsky webhook server receiving real events end-to-end
 
 ## Features
 
 | Slug | Status | Notes |
 |---|---|---|
-| tali-cli | 🟡 code written | RealClaw skill registration + `networth`, `wallet`, `log` stub, `rules` stub |
-| [p2p-log](features/p2p-log.md) | not started | Core differentiator — two-sided event |
-| [nl-parser](features/nl-parser.md) | not started | Claude intent classification + slot extraction |
-| [goldsky-pipeline](features/goldsky-pipeline.md) | not started | Pipeline YAML + deploy |
-| [watched-wallet](features/watched-wallet.md) | not started | `add_watched_wallet` intent handler |
+| tali-cli | 🟡 code written | `networth` functional, `log`/`rules`/`wallet` stubs |
+| byreal-cli setup | 🔲 not started | 3-step Byreal agent setup |
+| [goldsky-pipeline](features/goldsky-pipeline.md) | 🔲 not started | Pipeline YAML + deploy on Mantle |

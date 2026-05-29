@@ -1,159 +1,151 @@
 # Architecture
 
-High-level view of how Tali's components fit together. Source-of-truth product spec lives at `../../context/13_project_locked.md`.
+## Architectural decision record: why we dropped RealClaw and the Telegram bot
+
+**The logical error (documented 2026-05-29):**
+
+The original design assumed Tali's server could call RealClaw to trigger DeFi strategies. This was wrong for two reasons:
+
+1. **RealClaw has no external API.** There is no REST endpoint, webhook, or SDK for triggering RealClaw strategies programmatically. RealClaw's only interface is natural language messages sent via Telegram.
+2. **One bot token, one webhook.** Registering a bot token with RealClaw means RealClaw sets a webhook on that bot. Tali's grammY server cannot also hold a webhook on the same token. The two would fight.
+
+**The correct model:**
+- Tali uses `byreal-cli` directly — the underlying execution CLI that RealClaw itself is built on top of.
+- `byreal-cli` calls `https://api2.byreal.io` REST API and signs Solana transactions locally.
+- Tali's `tali-cli` is an OpenClaw skill for personal finance, published alongside `byreal-cli`.
+- Claude (the LLM) is the agent brain, using both skills as tools.
+- No Telegram bot. No RealClaw.
+
+---
 
 ## Layered view
 
 ```mermaid
 graph TD
     subgraph Interface
-        TG[Telegram bot<br/>RealClaw surface]
-        WEB[Desktop dashboard<br/>Next.js · Privy auth]
+        CLI[tali-cli<br/>OpenClaw skill surface]
+        WEB[Desktop dashboard<br/>Next.js · Privy auth · week 2]
     end
 
     subgraph Agent
-        SKILL[TaliSkill<br/>OpenClaw custom Skill]
-        NL[NL intent parser<br/>Claude]
+        CLAUDE[Claude<br/>LLM agent brain]
+        NL[NL intent parser]
         RULES[Rule engine + scheduler]
         RECON[Reconciliation engine]
     end
 
+    subgraph Skills
+        TALI[tali-cli<br/>personal finance]
+        BYREAL[byreal-cli<br/>Byreal DeFi execution]
+    end
+
     subgraph Data
-        PG[(Postgres<br/>unified event ledger<br/>offchain log)]
+        PG[(Postgres<br/>unified event ledger)]
         GS[Goldsky Mirror<br/>event webhooks]
-        ALC[Alchemy RPC<br/>state reads + tx sign]
+        ALC[Alchemy RPC<br/>Mantle state reads]
     end
 
-    subgraph Chain[Chain · Solana]
-        AR[AutonomousRule.sol<br/>action surface]
-        NFT[ERC-8004 NFT<br/>agent identity]
-        USDY[Ondo USDY]
-        DEX[Solana DEX swap<br/>via RealClaw/Byreal]
+    subgraph Mantle[Chain · Mantle]
+        AR[AutonomousRule.sol<br/>action surface · week 2]
+        NFT[ERC-8004 NFT<br/>agent identity · week 2]
     end
 
-    TG --> SKILL
+    subgraph Solana[Chain · Solana]
+        DEX[Byreal CLMM DEX<br/>yield · DCA · swaps]
+    end
+
+    CLI --> CLAUDE
     WEB --> PG
-    SKILL --> NL
-    SKILL --> RULES
-    SKILL --> RECON
-    SKILL --> PG
-    GS --> SKILL
-    SKILL --> ALC
-    ALC --> AR
-    AR --> DEX
-    DEX --> USDY
-    SKILL --> NFT
+    CLAUDE --> NL
+    CLAUDE --> RULES
+    CLAUDE --> RECON
+    CLAUDE --> TALI
+    CLAUDE --> BYREAL
+    TALI --> PG
+    TALI --> ALC
+    GS --> PG
+    BYREAL --> DEX
+    TALI --> NFT
+    RULES --> AR
 ```
 
-## The three-tier wallet model
-
-This is the single most important honesty for users — what Tali can read vs sign vs auto-execute.
+## Two-tier wallet model
 
 ```mermaid
 graph LR
     subgraph Tier1[Tier 1 · Watched · Read-only]
-        MM[MetaMask 0xABC]
+        MM[MetaMask · Mantle]
         PH[Phantom · Solana]
         IDX[Indodax · read-only API]
     end
 
     subgraph Tier2[Tier 2 · Tali Wallet · User-signed]
-        TALI[Privy embedded 0xDEF<br/>Split-key non-custodial]
+        TALI[Privy embedded<br/>Split-key non-custodial]
+        BYR[byreal-cli keypair<br/>~/.config/byreal/keys/]
     end
 
-    subgraph Tier3[Tier 3 · Rule Execution · Agent-orchestrated]
-        AR[AutonomousRule.sol 0xGHI<br/>Pre-authorized actions only]
-    end
-
-    Tier1 -.->|visibility only| DASH[Dashboard]
+    Tier1 -.->|visibility only| DASH[Dashboard / tali-cli]
     Tier2 -->|user authenticates<br/>via passkey/OAuth| DASH
-    Tier2 -->|pre-authorizes once<br/>at rule setup| Tier3
-    Tier3 -->|agent invokes<br/>executeRule| DASH
+    BYR -->|signs Solana txs<br/>locally| DEX[Byreal DEX]
 ```
 
 **Reading the diagram:**
-- **Tier 1** wallets are visible to Tali but Tali has no signing authority. Like Etherscan, but for your unified picture.
-- **Tier 2** is the new wallet Privy creates for you. You authenticate each manual send. Actions execute on Solana via RealClaw/Byreal.
-- **Tier 3** is the smart contract where rules execute. User pre-authorizes once at rule setup; agent invokes `executeRule()` thereafter within the rule's scope.
-
-Full security and failure-mode discussion: `../../context/13_project_locked.md` "Wallet model" section.
+- **Tier 1** wallets are visible to Tali but Tali has no signing authority.
+- **Tier 2** has two sub-wallets: Privy for Mantle (user-signed), and `byreal-cli`'s local keypair for Solana DeFi execution.
 
 ## Component responsibilities
 
 | Component | What it owns | What it never does |
 |---|---|---|
-| **Telegram bot (RealClaw)** | User-facing chat surface, NL input, notifications | Sign transactions directly (delegates to Privy); store secrets |
-| **TaliSkill (OpenClaw Skill)** | Rule engine, reconciliation, ledger writes, agent decisions | Hold keys; bypass user authorization |
+| **tali-cli (OpenClaw Skill)** | Net worth, P2P reconciliation, ledger writes, rule management | Execute DeFi trades (delegates to byreal-cli) |
+| **byreal-cli (Byreal Agent Skills)** | DeFi execution on Byreal/Solana — yield, DCA, swaps, positions | Hold personal finance data (that's Tali's job) |
+| **Claude (LLM)** | Agent reasoning, NL parsing, orchestrating both skills | Sign transactions; store secrets |
 | **Goldsky Mirror** | Real-time event delivery via webhooks, re-org handling, retry | Read state on demand (that's RPC's job) |
-| **Alchemy RPC** | Balance queries, transaction submission via Privy, fallback reads | Watch events (Goldsky's job) |
-| **Privy** | Non-custodial wallet keys (split between secure enclave + user auth) | Make decisions; act without explicit user/contract auth |
-| **AutonomousRule.sol** | Storing rule configs on-chain, executing constrained actions, emitting attestations | Hold rule logic; act without agent invocation |
-| **ERC-8004 NFT** | Agent identity, action attestation log, public reputation surface | Hold funds; control wallet authority |
-| **Postgres** | Offchain log, unified event ledger, user state | Hold authoritative on-chain truth (chain is canonical) |
-| **Next.js dashboard** | Calm daily-use surface, activity feed, net-worth screen | Mutate state (calls TaliSkill API for writes) |
+| **Alchemy RPC** | Mantle balance queries, read state on demand | Watch events (Goldsky's job) |
+| **Privy** | Non-custodial Mantle wallet keys (split-key) | Make decisions; act without explicit user auth |
+| **AutonomousRule.sol** | Storing rule configs on Mantle, emitting attestations | Execute Solana DeFi (that's byreal-cli's job) |
+| **ERC-8004 NFT** | Agent identity, action attestation log, public reputation on Mantle | Hold funds; control wallet authority |
+| **Postgres** | Offchain log, unified event ledger, user state | Hold authoritative on-chain truth |
 
 ## Data flow at a glance
 
 ```mermaid
 flowchart LR
-    subgraph User Actions
+    subgraph User
         U1[Log P2P trade]
         U2[Set savings rule]
         U3[Check net worth]
-        U4[Import bank CSV]
     end
 
     subgraph On-chain Events
-        E1[USDT received]
-        E2[Wallet swap]
-        E3[USDY accrual]
+        E1[USDT received on Mantle]
+        E2[Byreal position opened on Solana]
     end
 
-    U1 --> NL[NL parser<br/>+ ledger write]
-    U2 --> SET[Sign setRule tx<br/>+ contract config]
-    U3 --> AGG[Aggregate balances<br/>+ render]
-    U4 --> OCR[OCR/CSV parse<br/>+ ledger write<br/>+ reconcile]
+    U1 --> NL[tali-cli log<br/>NL parse + ledger write]
+    U2 --> SET[tali-cli rules add<br/>+ AutonomousRule.sol]
+    U3 --> AGG[tali-cli networth<br/>Alchemy + CoinGecko]
 
-    E1 --> WH[Goldsky webhook]
-    WH --> MATCH[Rule match]
-    MATCH --> EXEC[Sign executeRule tx]
-    EXEC --> E2
-    E2 --> E3
+    E1 --> WH[Goldsky webhook<br/>→ Postgres]
+    WH --> MATCH[Rule match<br/>→ byreal-cli execute]
+    MATCH --> E2
 
     NL --> LEDGER[(Unified ledger)]
     SET --> LEDGER
-    OCR --> LEDGER
-    EXEC --> LEDGER
+    AGG --> LEDGER
     WH --> LEDGER
+    MATCH --> LEDGER
 ```
 
 ## Why this shape
 
-The key architectural decision is **Pattern B: agent-orchestrated action**. We picked it over Pattern A (contract self-executes) because:
+**Two-skill model instead of monolith.** Byreal already has a production-grade DeFi execution CLI. Building Solana DEX interaction from scratch in the hackathon timeline would be inferior and risky. Tali's value-add is the personal finance layer — reconciliation, IDR visibility, bank import — which Byreal doesn't have. Both skills together form a complete autonomous financial agent.
 
-1. The agent doing the reasoning is what makes this on-thesis for "agent autonomy" scoring
-2. Rule logic in TypeScript is faster to iterate than rule logic in Solidity
-3. Complex rule conditions (multi-trigger, time-aware, cross-asset) are agent territory, not contract territory
-4. Smart contract stays minimal — just a constrained action surface the agent can invoke
+**Mantle for attestation, Solana for execution.** The hackathon runs on Mantle. ERC-8004 NFT and `AutonomousRule.sol` live on Mantle — on-chain record of every agent decision. Actual DeFi execution is on Byreal/Solana where the liquidity lives.
 
-The contract has authority bounded by what the user signed for. The agent has the reasoning. Together they form an autonomous loop without custodial trust.
-
-Full Pattern A vs B reasoning: `../../context/13_project_locked.md` "Tier 3 — AutonomousRule.sol" section.
-
-## Data sovereignty (planned — week 2+)
-
-Tali will offer an opt-in self-sovereign mode for user financial data:
-
-- **Default:** data stored on Tali's server (Drizzle ORM + PostgreSQL)
-- **Self-sovereign mode (planned):** user data encrypted client-side with the user's own private key, stored permanently on Arweave/IPFS/Filecoin. Tali cannot read it. If Tali shuts down, the user's complete financial history remains accessible via their private key.
-
-**Important:** this is never transparent-by-default onchain storage. Financial data is never written to a public blockchain in readable form. Always encrypted client-side before storage. The onchain layer is a neutral carrier.
-
-User-facing framing: *"Your data, encrypted with your key, stored permanently. Tali could disappear tomorrow and you'd still have everything."*
-
-This is the direct answer to the Mint shutdown problem (2024). See `idea-bank/later/data-sovereignty.md` for full concept.
+**OpenClaw as the interface.** Publishing as an OpenClaw skill means any LLM that supports OpenClaw can install and use Tali. Claude Code, RealClaw, and future agents all become first-class users.
 
 ## See also
 
-- [`workflow.md`](workflow.md) — step-by-step user flows (onboarding, rule firing, P2P trade logging, monthly bank import)
-- [`objectives.md`](objectives.md) — 3-week roadmap, MVP scope, what we won't build
+- [`workflow.md`](workflow.md) — step-by-step user flows
+- [`objectives.md`](objectives.md) — 3-week roadmap, MVP scope

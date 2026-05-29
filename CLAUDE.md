@@ -31,12 +31,8 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
   - `backend/src/wallet/privy.ts` — wallet creation + tx signing via Privy server SDK
   - `backend/drizzle/` — generated SQL migrations (run via `pnpm db:migrate`)
   - `backend/skills/tali/SKILL.md` — OpenClaw skill registration (LLM routing + install instructions)
-- `contracts/` — **week 2** — `AutonomousRule.sol` + ERC-8004 NFT on Mantle
-- `web/` — **week 2** — Next.js desktop dashboard (Privy auth)
-- `docs/` — architecture, workflow, objectives, intents (NL parser contract)
-- `design/` — conversation-flow wireframes and web-app design prompts
-- `idea-bank/` — scoped future ideas; not active scope
-- `plans/` — implementation plans following the compound-engineering cycle
+- `docs/` — architecture + objectives (current state only)
+- `idea-bank/` — future ideas; not active scope
 
 ## Key conventions
 
@@ -54,31 +50,28 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 
 - **Two-skill model:** `tali-cli` (personal finance) + `byreal-cli` (DeFi execution). Claude orchestrates both.
 - **Two-tier wallet:** watched (read-only, Mantle/Solana) / Tali wallet (Privy, user-signed).
-- **Mantle for attestation.** `AutonomousRule.sol` + ERC-8004 NFT deploy to Mantle. Agent decisions attested on-chain.
-- **Solana for DeFi.** `byreal-cli` executes yield, DCA, swaps on Byreal.
+- **Mantle** for wallet balances and IDR net worth. **Solana** for DeFi execution via `byreal-cli`.
 - **Goldsky Mirror** pushes real-time onchain events to Tali's webhook server. No polling.
 
-## The three core problems Tali solves
+## What Tali does now
 
-1. **P2P reconciliation** — link USDT outflow onchain to IDR inflow in bank account as one event; no other tool models this
-2. **Unified visibility** — Mantle + Solana wallets + offchain accounts (BCA, GoPay, cash) in one IDR net worth view
-3. **Autonomous agency** — plain-language rules trigger Byreal DeFi strategies; agent acts while user sleeps; every action attested via ERC-8004 NFT on Mantle
+- `tali-cli networth --wallet <address>` — live Mantle balances + IDR total
+- `byreal-cli` — DeFi execution on Byreal/Solana
+- Goldsky webhook server — real-time onchain event ingestion
 
 ## Track positioning
 
 - Primary: **Agentic Economy Path B (RealClaw Real-Life Expansion)** — Tali extends Byreal's DeFi agent into real-life financial management
-- Stretch: AI×RWA + Grand Champion
 - Locked-in: 20 Project Deployment Award
 
 ## Strict rules
 
-1. **Pivot parking lot is active.** Any new project idea or major reframe goes into `idea-bank/` with a date.
-2. **Don't suggest features beyond MVP scope** unless explicitly asked.
-3. **Never write to user's existing MetaMask or Phantom.** Those are watched (Tier 1, read-only).
-4. **Solana DeFi execution goes through `byreal-cli` only.** Tali never signs Solana transactions directly.
-5. **Mantle attestation is separate from Solana execution.** ERC-8004 NFT + `AutonomousRule.sol` live on Mantle.
-6. **Real-time event delivery is via Goldsky Mirror webhooks, NOT polling.**
-7. **Wallets are non-custodial.** Privy split-key. We never hold keys.
+1. **Pivot parking lot is active.** New ideas go into `idea-bank/` with a date, not active scope.
+2. **Don't suggest features beyond what's built** unless explicitly asked.
+3. **Never write to watched wallets.** MetaMask/Phantom are Tier 1, read-only.
+4. **Solana DeFi execution goes through `byreal-cli` only.**
+5. **Real-time event delivery is via Goldsky Mirror webhooks, NOT polling.**
+6. **Wallets are non-custodial.** Privy split-key. We never hold keys.
 
 ## Running locally
 
@@ -88,8 +81,6 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 - DB migrate: `pnpm db:migrate`
 - Webhook server: `pnpm dev:backend`
 - CLI dev: `pnpm --filter @tali/backend dev:cli`
-- Web dev: `pnpm dev:web` — **week 2**
-- Contracts: `cd contracts && forge build` — **week 2**
 
 ### Required env vars (see `backend/.env.example`)
 
@@ -97,34 +88,10 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 
 ## Current build state (as of 2026-05-29)
 
-**Built:**
-- `tali-cli networth` — queries Mantle balances via Alchemy + CoinGecko, renders IDR total
-- `tali-cli log` — stub; NL parser not wired yet
-- `tali-cli rules` — stub; rules engine not wired yet
-- `tali-cli wallet` — stub; Goldsky registration not wired yet
+- `tali-cli networth` — functional; queries Mantle balances + IDR total
+- `tali-cli log` / `rules` / `wallet` — stubs
 - Goldsky webhook server — HMAC-verified, writes events to unified ledger
 - DB schema — `users`, `events`, `watchedWallets`; migrations generated
-
-**Not yet built (week 2+):**
-- P2P reconciliation NL parser (Claude)
-- Autonomous rules engine + `AutonomousRule.sol`
-- ERC-8004 NFT contract (Mantle)
-- Web dashboard (Next.js)
-- Bank CSV / OCR import
-
-## Plans folder — compound-engineering cycle
-
-`plans/` follows the compound-engineering workflow: **brainstorm → plan → work → review → compound**.
-
-```
-plans/
-  week-1.md
-  week-2.md
-  week-3.md
-  features/<slug>.md
-docs/
-  solutions/<slug>.md   ← /compound output after a feature ships
-```
 
 ## Pre-commit checklist
 

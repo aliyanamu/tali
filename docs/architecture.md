@@ -87,13 +87,13 @@ graph LR
     PV -->|user signs each tx<br/>via passkey/OAuth| DASH
     PV -->|pre-authorizes rule scope| AR[AutonomousRule.sol]
     AR -->|agent invokes executeRule| DASH
-    BYR -->|signs Solana txs locally| DEX[Byreal DEX]
+    BYR -->|signs Solana txs · server wallet now, user wallet later| DEX[Byreal DEX]
 ```
 
 **Reading the diagram:**
 - **Tier 1** wallets are visible to Tali but Tali has no signing authority.
 - **Privy** wallet handles Mantle — user signs manually or pre-authorizes a rule scope once.
-- **byreal-cli keypair** handles Solana DeFi — local signing, never transmitted.
+- **byreal-cli keypair** handles Solana DeFi. Currently: dedicated server agent wallet at `~/.config/byreal/keys/` on the backend server (Option 2). Production target: user's own wallet via local OpenClaw execution (Option 1 — see § "Execution model").
 
 ---
 
@@ -128,6 +128,50 @@ flowchart LR
     GS --> LOG
     AR --> LOG
 ```
+
+---
+
+## Execution model: current vs. production
+
+### Option 2 — Server-side byreal-cli (hackathon implementation)
+
+`byreal-cli` is installed on the Tali backend server. When a rule fires, the server spawns it as a child process directly.
+
+```
+Alchemy Webhook → Rule matcher → Claude planner → ExecutionGateway
+                                                        ↓
+                                              ByreaCliExecutor
+                                              execSync('byreal-cli ...')
+                                              server agent wallet
+                                              (~/.config/byreal/keys/)
+```
+
+**Wallet isolation:** `byreal-cli` manages its own Solana keypair at `~/.config/byreal/keys/`. This directory is owned by the process user and is never accessed by the Hono webhook handler. The server runs a **dedicated agent wallet** (not the user's Phantom wallet) that is pre-funded for automated execution.
+
+**Code seam:** `backend/src/agent/executor.ts` — `ExecutionGateway` interface. Only `ByreaCliExecutor` is wired in production today. Swapping to Option 1 is a single implementation change behind this interface; all rule matching, Claude planning, and Mantle attestation code is unchanged.
+
+---
+
+### Option 1 — Push notification (production target, not yet implemented)
+
+When a rule fires, the server sends a push notification to the user's device. The user confirms; their local OpenClaw instance executes `byreal-cli` with **their own Phantom-connected wallet**. The server receives the result via a signed callback and attests on Mantle.
+
+```
+Alchemy Webhook → Rule matcher → Claude planner → ExecutionGateway
+                                                        ↓
+                                              PushNotificationExecutor   (not built)
+                                              → push to user device
+                                              → user confirms in OpenClaw
+                                              → local byreal-cli executes
+                                              → signed callback to server
+```
+
+**Why this is better long-term:**
+- User's own wallet signs Solana txs — no server-side key risk
+- byreal-cli uses user's full Byreal account state (positions, history)
+- Matches OpenClaw's intended local-execution model
+
+**Migration:** Implement `PushNotificationExecutor implements ExecutionGateway` in `backend/src/agent/executor.ts` and swap the factory in `createExecutor()`. No other files change.
 
 ---
 

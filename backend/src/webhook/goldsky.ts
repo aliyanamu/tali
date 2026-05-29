@@ -36,7 +36,7 @@ type TransferEvent = z.infer<typeof TransferEventSchema>;
  */
 function verifySignature(rawBody: string, signature: string | undefined): boolean {
   if (!signature) return false;
-  const expected = createHmac('sha256', env.GOLDSKY_WEBHOOK_SECRET).update(rawBody).digest('hex');
+  const expected = createHmac('sha256', env.ALCHEMY_WEBHOOK_SECRET ?? '').update(rawBody).digest('hex');
   const provided = signature.startsWith('sha256=') ? signature.slice(7) : signature;
 
   if (expected.length !== provided.length) return false;

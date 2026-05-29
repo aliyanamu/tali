@@ -8,10 +8,10 @@ const EnvSchema = z.object({
   // Alchemy (webhook secret for HMAC verification)
   ALCHEMY_WEBHOOK_SECRET: z.string().optional(),
 
-  // Anthropic (NL parsing, P2P intent extraction)
-  ANTHROPIC_API_KEY: z.string().min(1),
-  ANTHROPIC_BASE_URL: z.string().url().optional(),
-  ANTHROPIC_MODEL: z.string().optional(),
+  // LLM (provider-agnostic — swap via LLM_PROVIDER)
+  LLM_PROVIDER: z.enum(['anthropic', 'openai', 'google']).default('anthropic'),
+  LLM_API_KEY: z.string().min(1),
+  LLM_MODEL: z.string().default('claude-haiku-4-5-20251001'),
 
   // Postgres
   DATABASE_URL: z.string().min(1),

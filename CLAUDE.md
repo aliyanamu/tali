@@ -93,6 +93,28 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 - Goldsky webhook server — HMAC-verified, writes events to unified ledger
 - DB schema — `users`, `events`, `watchedWallets`; migrations generated
 
+## Plans folder — compound-engineering cycle
+
+`plans/` follows the compound-engineering workflow: **brainstorm → plan → work → review → compound**.
+
+```
+plans/
+  week-1.md              ← current milestone
+  week-2.md
+  week-3.md
+  features/<slug>.md     ← one file per feature
+docs/
+  solutions/<slug>.md    ← /compound output after a feature ships
+```
+
+| Step | Where | Skill |
+|---|---|---|
+| brainstorm | `plans/features/<slug>.md` § Brainstorm | `/brainstorm` |
+| plan | `plans/features/<slug>.md` § Plan | `/plan` |
+| work | git commits | `/work` |
+| review | PR diff | `/review` |
+| compound | `docs/solutions/<slug>.md` | `/compound` |
+
 ## Pre-commit checklist
 
 - Run linter / typecheck

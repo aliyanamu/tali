@@ -13,9 +13,9 @@ Mufidah can run `tali-cli networth` and see her IDR net worth, and a `byreal-cli
 **Services to set up first (blockers for everything below)**
 - [x] ✅ Local Postgres running + `pnpm db:migrate` passes
 - [ ] 🔲 Privy account + app created → `PRIVY_APP_ID`, `PRIVY_APP_SECRET`
-- [ ] 🔲 Alchemy account → `ALCHEMY_MANTLE_RPC`
+- [x] ✅ Alchemy account → `ALCHEMY_MANTLE_RPC`
 - [~] ~~CoinGecko Demo API key → `COINGECKO_API_KEY` — not needed, using free tier (no key required)~~
-- [ ] 🔲 Goldsky account + webhook secret → `GOLDSKY_WEBHOOK_SECRET`
+- [~] ~~Goldsky account + webhook secret → `GOLDSKY_WEBHOOK_SECRET` — replaced by Alchemy Webhooks (same Alchemy account)~~
 - [ ] 🔲 Anthropic API key → `ANTHROPIC_API_KEY`
 
 **byreal-cli OpenClaw agent**
@@ -29,8 +29,8 @@ Mufidah can run `tali-cli networth` and see her IDR net worth, and a `byreal-cli
 - [ ] 🟡 `tali-cli networth --wallet <address>` — code written; needs Alchemy + CoinGecko keys to test live
 - [ ] 🟡 `tali-cli skill` — SKILL.md registration ready; smoke-test after install
 - [ ] 🔲 Token addresses in `tokens.ts` verified on mantlescan.xyz
-- [ ] 🔲 Goldsky Mirror pipeline deployed (Transfer events on Mantle for user wallet)
-- [ ] 🔲 Goldsky webhook server receiving real events end-to-end
+- [ ] 🔲 Alchemy Webhook configured (Transfer events on Mantle for user wallet)
+- [ ] 🔲 Alchemy webhook server receiving real events end-to-end
 
 ## Features
 
@@ -38,4 +38,4 @@ Mufidah can run `tali-cli networth` and see her IDR net worth, and a `byreal-cli
 |---|---|---|
 | tali-cli | 🟡 code written | `networth` functional, `log`/`rules`/`wallet` stubs |
 | byreal-cli setup | 🔲 not started | 3-step Byreal agent setup |
-| [goldsky-pipeline](features/goldsky-pipeline.md) | 🔲 not started | Pipeline YAML + deploy on Mantle |
+| alchemy-webhook | 🔲 not started | Alchemy Webhook for Mantle Transfer events (replaces Goldsky for hackathon) |

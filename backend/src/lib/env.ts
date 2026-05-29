@@ -5,14 +5,13 @@ const EnvSchema = z.object({
   PRIVY_APP_ID: z.string().min(1),
   PRIVY_APP_SECRET: z.string().min(1),
 
-  // Goldsky (webhook secret for HMAC verification)
-  GOLDSKY_WEBHOOK_SECRET: z.string().min(1),
+  // Alchemy (webhook secret for HMAC verification)
+  ALCHEMY_WEBHOOK_SECRET: z.string().optional(),
 
   // Anthropic (NL parsing, P2P intent extraction)
   ANTHROPIC_API_KEY: z.string().min(1),
-
-  // CoinGecko (price data with caching)
-  COINGECKO_API_KEY: z.string().min(1),
+  ANTHROPIC_BASE_URL: z.string().url().optional(),
+  ANTHROPIC_MODEL: z.string().optional(),
 
   // Postgres
   DATABASE_URL: z.string().min(1),

@@ -16,7 +16,7 @@ Mufidah can run `tali-cli networth` and see her IDR net worth, and a `byreal-cli
 - [x] ✅ Alchemy account → `ALCHEMY_MANTLE_RPC`
 - [~] ~~CoinGecko Demo API key → `COINGECKO_API_KEY` — not needed, using free tier (no key required)~~
 - [~] ~~Goldsky account + webhook secret → `GOLDSKY_WEBHOOK_SECRET` — replaced by Alchemy Webhooks (same Alchemy account)~~
-- [ ] 🔲 Anthropic API key → `ANTHROPIC_API_KEY`
+- [x] ✅ Anthropic API key → `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`, `ANTHROPIC_MODEL`
 
 **byreal-cli OpenClaw agent**
 - [ ] 🔲 `npm install -g @byreal-io/byreal-cli`
@@ -29,7 +29,7 @@ Mufidah can run `tali-cli networth` and see her IDR net worth, and a `byreal-cli
 - [ ] 🟡 `tali-cli networth --wallet <address>` — code written; needs Alchemy + CoinGecko keys to test live
 - [ ] 🟡 `tali-cli skill` — SKILL.md registration ready; smoke-test after install
 - [ ] 🔲 Token addresses in `tokens.ts` verified on mantlescan.xyz
-- [ ] 🔲 Alchemy Webhook configured (Transfer events on Mantle for user wallet)
+- [ ] 🔲 Alchemy Webhook configured (Transfer events on Mantle for user wallet) — do after webhook server + wallet address are ready
 - [ ] 🔲 Alchemy webhook server receiving real events end-to-end
 
 ## Features

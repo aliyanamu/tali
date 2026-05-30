@@ -100,21 +100,22 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 
 ```
 plans/
-  week-1.md              ← current milestone
+  week-1.md                        ← current milestone
   week-2.md
   week-3.md
-  features/<slug>.md     ← one file per feature
-docs/
-  solutions/<slug>.md    ← /compound output after a feature ships
+  features/<slug>/
+    brainstorm.md                  ← brainstorm output
+    plan.md                        ← implementation plan
+    solution.md                    ← /compound output after a feature ships
 ```
 
 | Step | Where | Skill |
 |---|---|---|
-| brainstorm | `plans/features/<slug>.md` § Brainstorm | `/brainstorm` |
-| plan | `plans/features/<slug>.md` § Plan | `/plan` |
+| brainstorm | `plans/features/<slug>/brainstorm.md` | `/brainstorm` |
+| plan | `plans/features/<slug>/plan.md` | `/plan` |
 | work | git commits | `/work` |
 | review | PR diff | `/review` |
-| compound | `docs/solutions/<slug>.md` | `/compound` |
+| compound | `plans/features/<slug>/solution.md` | `/compound` |
 
 ## Pre-commit checklist
 

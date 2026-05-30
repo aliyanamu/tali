@@ -23,9 +23,13 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 
 ## Repo layout
 
-- `backend/` — all backend TypeScript: Goldsky webhook server + tali-cli + Drizzle ORM
+- `backend/` — all backend TypeScript: Alchemy webhook server + tali-cli + Drizzle ORM
   - `backend/src/cli/` — `tali-cli` OpenClaw skill: `networth`, `log`, `rules`, `wallet`
-  - `backend/src/webhook/` — Goldsky HMAC-verified webhook handler (Hono)
+  - `backend/src/server/` — Hono app: HMAC-verified webhook handler + API route stubs
+    - `app.ts` — Hono app factory + route mounting
+    - `middleware/hmac.ts` — shared HMAC-SHA256 verification
+    - `routes/webhooks/alchemy.ts` — POST /webhooks/alchemy (Alchemy Notify)
+    - `routes/api/` — REST API stubs for week-2 frontend
   - `backend/src/db/schema.ts` — unified event ledger schema (`users`, `events`, `watchedWallets`)
   - `backend/src/lib/` — chain (viem/Mantle), prices (CoinGecko/IDR), tokens, env, logger
   - `backend/src/wallet/privy.ts` — wallet creation + tx signing via Privy server SDK
@@ -51,13 +55,13 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 - **Two-skill model:** `tali-cli` (personal finance) + `byreal-cli` (DeFi execution). Claude orchestrates both.
 - **Two-tier wallet:** watched (read-only, Mantle/Solana) / Tali wallet (Privy, user-signed).
 - **Mantle** for wallet balances and IDR net worth. **Solana** for DeFi execution via `byreal-cli`.
-- **Goldsky Mirror** pushes real-time onchain events to Tali's webhook server. No polling.
+- **Alchemy Notify** pushes real-time onchain Transfer events to Tali's webhook server. No polling.
 
 ## What Tali does now
 
 - `tali-cli networth --wallet <address>` — live Mantle balances + IDR total
 - `byreal-cli` — DeFi execution on Byreal/Solana
-- Goldsky webhook server — real-time onchain event ingestion
+- Alchemy webhook server — real-time onchain Transfer event ingestion
 
 ## Track positioning
 
@@ -71,7 +75,7 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 2. **Don't suggest features beyond what's built** unless explicitly asked.
 3. **Never write to watched wallets.** MetaMask/Phantom are Tier 1, read-only.
 4. **Solana DeFi execution goes through `byreal-cli` only.**
-5. **Real-time event delivery is via Goldsky Mirror webhooks, NOT polling.**
+5. **Real-time event delivery is via Alchemy Notify webhooks, NOT polling.**
 6. **Wallets are non-custodial.** Privy split-key. We never hold keys.
 
 ## Running locally

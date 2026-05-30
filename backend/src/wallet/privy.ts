@@ -2,7 +2,7 @@ import { PrivyClient } from '@privy-io/server-auth';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
 
-const privy = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET);
+const privy = new PrivyClient(env.PRIVY_APP_ID ?? '', env.PRIVY_APP_SECRET ?? '');
 
 export type CreatedWallet = {
   walletId: string;

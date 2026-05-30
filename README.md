@@ -78,19 +78,19 @@ byreal-cli swap execute --input-mint <MINT> --output-mint <MINT> --amount 1 --dr
 ```bash
 cp backend/.env.example backend/.env   # fill in keys
 pnpm db:migrate
-pnpm dev:backend                        # Goldsky webhook server on :3000
+pnpm dev:backend                        # Alchemy webhook server on :3000
 ```
 
 ## Required env vars
 
-See `backend/.env.example`: `PRIVY_APP_ID`, `PRIVY_APP_SECRET`, `ALCHEMY_API_KEY`, `ALCHEMY_MANTLE_RPC`, `GOLDSKY_WEBHOOK_SECRET`, `ANTHROPIC_API_KEY`, `COINGECKO_API_KEY`, `DATABASE_URL`
+See `backend/.env.example`: `MANTLE_ALCHEMY_RPC`, `SOLANA_HELIUS_RPC`, `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`, `DATABASE_URL`, `PRIVY_APP_ID`, `PRIVY_APP_SECRET`, `ALCHEMY_WEBHOOK_SECRET`, `COINGECKO_API_KEY` (optional)
 
 ## Stack
 
 - **tali-cli** — TypeScript, Commander, viem, Drizzle ORM
 - **byreal-cli** — `@byreal-io/byreal-cli`, Byreal CLMM DEX on Solana
-- **Goldsky Mirror** — push-based real-time Mantle event delivery
-- **Alchemy** — Mantle RPC
+- **Alchemy Webhooks** — push-based real-time Mantle event delivery
+- **Alchemy / Helius** — Mantle RPC + Solana RPC
 - **Privy** — non-custodial Mantle wallet
 - **Anthropic Claude** — agent brain (NL parsing, orchestration)
 - **Postgres** — unified event ledger

@@ -27,6 +27,7 @@ _(empty)_
 
 ### next-month
 - [Reminders & Notification Center](next-month/reminders-and-notification-center.md) — user-set bill/date reminders + a categorized notification center with Personal / System tabs.
+- [Mantle DevKit MCP](next-month/mantle-devkit-mcp.md) — Agent Kit for Mantle DeFi execution + MCP server for Claude↔Mantle; revisit if Tali expands beyond read-only Mantle usage.
 
 ### later
 - [Cheap, AI-aware Mantle data infrastructure](later/mantle-ai-data-infra.md) — affordable open-source indexing + monitoring layer for Mantle with an AI query/anomaly surface. _(Project-level pivot.)_

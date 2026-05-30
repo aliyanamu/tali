@@ -1,4 +1,5 @@
 import { execSync } from 'child_process';
+import { env } from '../lib/env';
 import { logger } from '../lib/logger';
 
 export interface ExecutionPlan {
@@ -35,7 +36,12 @@ export class ByreaCliExecutor implements ExecutionGateway {
       const output = execSync(plan.command, {
         encoding: 'utf-8',
         timeout: 60_000,
-        env: { ...process.env },
+        env: {
+          ...process.env,
+          // byreal-cli reads SOLANA_RPC_URL; we store it as ALCHEMY_SOLANA_RPC
+          ...(env.ALCHEMY_SOLANA_RPC && { SOLANA_RPC_URL: env.ALCHEMY_SOLANA_RPC }),
+          ...(env.BYREAL_KEYS_DIR && { BYREAL_KEYS_DIR: env.BYREAL_KEYS_DIR }),
+        },
       });
       logger.info({ ruleId: plan.ruleId }, 'byreal-cli execution succeeded');
       return { success: true, output: output.trim() };

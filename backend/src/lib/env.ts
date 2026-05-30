@@ -20,6 +20,10 @@ const EnvSchema = z.object({
   MANTLE_CHAIN_ID: z.coerce.number().default(5000),
   ALCHEMY_API_KEY: z.string().min(1),
   ALCHEMY_MANTLE_RPC: z.string().url(),
+  ALCHEMY_SOLANA_RPC: z.string().url().optional(),
+
+  // byreal-cli (server-side agent wallet)
+  BYREAL_KEYS_DIR: z.string().optional(),
   AUTONOMOUS_RULE_CONTRACT: z.string().optional(),
   ERC8004_NFT_CONTRACT: z.string().optional(),
 

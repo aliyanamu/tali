@@ -19,11 +19,11 @@ Mufidah can run `tali-cli networth` and see her IDR net worth, and a `byreal-cli
 - [x] ✅ Anthropic API key → `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`, `ANTHROPIC_MODEL`
 
 **byreal-cli OpenClaw agent**
-- [ ] 🔲 `npm install -g @byreal-io/byreal-cli`
-- [ ] 🔲 `byreal-cli setup` — Solana wallet configured
+- [x] ✅ `npm install -g @byreal-io/byreal-cli`
+- [x] ✅ `byreal-cli setup` — Solana wallet configured (`FkSMcD6rMnCaBtHPtqsa6HKRFkwknVsELHhXmGUr1tT7`)
 - [ ] 🔲 `npx skills add byreal-git/byreal-agent-skills` — skill installed in Claude
 - [ ] 🔲 Smoke test: `byreal-cli pools list` returns live data
-- [ ] 🔲 Smoke test: `byreal-cli wallet balance` shows Solana balance
+- [x] ✅ Smoke test: `byreal-cli wallet balance` shows Solana balance
 
 **tali-cli**
 - [ ] 🟡 `tali-cli networth --wallet <address>` — code written; needs Alchemy + CoinGecko keys to test live
@@ -37,5 +37,5 @@ Mufidah can run `tali-cli networth` and see her IDR net worth, and a `byreal-cli
 | Slug | Status | Notes |
 |---|---|---|
 | tali-cli | 🟡 code written | `networth` functional, `log`/`rules`/`wallet` stubs |
-| byreal-cli setup | 🔲 not started | 3-step Byreal agent setup |
+| byreal-cli setup | 🟡 in progress | wallet configured; skill install + pools smoke test remaining |
 | alchemy-webhook | 🔲 not started | Alchemy Webhook for Mantle Transfer events (replaces Goldsky for hackathon) |

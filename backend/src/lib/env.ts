@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 const EnvSchema = z.object({
-  // Privy (Tier 2 wallet management)
-  PRIVY_APP_ID: z.string().min(1),
-  PRIVY_APP_SECRET: z.string().min(1),
+  // Privy (Tier 2 wallet management — required for wallet commands, not for networth)
+  PRIVY_APP_ID: z.string().optional(),
+  PRIVY_APP_SECRET: z.string().optional(),
 
   // Alchemy (webhook secret for HMAC verification)
   ALCHEMY_WEBHOOK_SECRET: z.string().optional(),
@@ -18,9 +18,9 @@ const EnvSchema = z.object({
 
   // Mantle chain config (ERC-8004 NFT + on-chain attestation)
   MANTLE_CHAIN_ID: z.coerce.number().default(5000),
-  ALCHEMY_API_KEY: z.string().min(1),
-  ALCHEMY_MANTLE_RPC: z.string().url(),
-  ALCHEMY_SOLANA_RPC: z.string().url().optional(),
+  MANTLE_ALCHEMY_RPC: z.string().url(),
+  SOLANA_HELIUS_RPC: z.string().url().optional(),
+  SOLANA_ALCHEMY_RPC: z.string().url().optional(),
 
   // byreal-cli (server-side agent wallet)
   BYREAL_KEYS_DIR: z.string().optional(),

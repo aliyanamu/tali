@@ -38,8 +38,9 @@ export class ByreaCliExecutor implements ExecutionGateway {
         timeout: 60_000,
         env: {
           ...process.env,
-          // byreal-cli reads SOLANA_RPC_URL; we store it as ALCHEMY_SOLANA_RPC
-          ...(env.ALCHEMY_SOLANA_RPC && { SOLANA_RPC_URL: env.ALCHEMY_SOLANA_RPC }),
+          // byreal-cli reads SOLANA_RPC_URL; prefer Helius mainnet, fall back to Alchemy
+          ...(env.SOLANA_HELIUS_RPC && { SOLANA_RPC_URL: env.SOLANA_HELIUS_RPC }),
+          ...(!env.SOLANA_HELIUS_RPC && env.SOLANA_ALCHEMY_RPC && { SOLANA_RPC_URL: env.SOLANA_ALCHEMY_RPC }),
           ...(env.BYREAL_KEYS_DIR && { BYREAL_KEYS_DIR: env.BYREAL_KEYS_DIR }),
         },
       });

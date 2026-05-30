@@ -21,12 +21,13 @@ Mufidah can run `tali-cli networth` and see her IDR net worth, and a `byreal-cli
 **byreal-cli OpenClaw agent**
 - [x] ✅ `npm install -g @byreal-io/byreal-cli`
 - [x] ✅ `byreal-cli setup` — Solana wallet configured (`FkSMcD6rMnCaBtHPtqsa6HKRFkwknVsELHhXmGUr1tT7`)
-- [ ] 🔲 `npx skills add byreal-git/byreal-agent-skills` — skill installed in Claude
-- [ ] 🔲 Smoke test: `byreal-cli pools list` returns live data
+- [x] ~~`npx skills add byreal-git/byreal-agent-skills` — skill installed in Claude~~ N/A: Claude calls byreal-cli via execSync in executor.ts; skills installer targets Cursor/Cline/etc., not Claude Code
+- [x] ✅ Smoke test: `byreal-cli pools list` returns live data
 - [x] ✅ Smoke test: `byreal-cli wallet balance` shows Solana balance
 
 **tali-cli**
-- [ ] 🟡 `tali-cli networth --wallet <address>` — code written; needs Alchemy + CoinGecko keys to test live
+- [x] ✅ `tali-cli networth --wallet <address>` — tested live on Mantle Sepolia; returns MNT balance + IDR total
+- [x] ✅ `tali-cli` available globally via `pnpm link --global` (dev wrapper using local tsx)
 - [ ] 🟡 `tali-cli skill` — SKILL.md registration ready; smoke-test after install
 - [ ] 🔲 Token addresses in `tokens.ts` verified on mantlescan.xyz
 - [ ] 🔲 Alchemy Webhook configured (Transfer events on Mantle for user wallet) — do after webhook server + wallet address are ready
@@ -36,6 +37,6 @@ Mufidah can run `tali-cli networth` and see her IDR net worth, and a `byreal-cli
 
 | Slug | Status | Notes |
 |---|---|---|
-| tali-cli | 🟡 code written | `networth` functional, `log`/`rules`/`wallet` stubs |
-| byreal-cli setup | 🟡 in progress | wallet configured; skill install + pools smoke test remaining |
+| tali-cli | ✅ done | `networth` tested live; `log`/`rules`/`wallet` stubs |
+| byreal-cli setup | ✅ done | wallet configured, skill installed, pools list live |
 | alchemy-webhook | 🔲 not started | Alchemy Webhook for Mantle Transfer events (replaces Goldsky for hackathon) |

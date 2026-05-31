@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
-import { handleAlchemyWebhook } from './routes/webhooks/alchemy.js';
+import { handleGoldskyWebhook } from './routes/webhooks/goldsky.js';
 import { handleGetNetworth } from './routes/api/networth.js';
 import { handleGetEvents } from './routes/api/events.js';
 import { handleGetRules, handlePostRules } from './routes/api/rules.js';
@@ -13,7 +13,7 @@ export const app = new Hono();
 app.get('/health', (c) => c.json({ status: 'ok' }));
 
 // Webhooks
-app.post('/webhooks/alchemy', handleAlchemyWebhook);
+app.post('/webhooks/goldsky', handleGoldskyWebhook);
 
 // API (week-2 — stubs return 501 until implemented)
 app.get('/api/networth', handleGetNetworth);

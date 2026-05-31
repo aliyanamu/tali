@@ -5,10 +5,8 @@ const EnvSchema = z.object({
   PRIVY_APP_ID: z.string().min(1),
   PRIVY_APP_SECRET: z.string().min(1),
 
-  // Alchemy Notify (webhook HMAC + address management)
-  ALCHEMY_WEBHOOK_SECRET: z.string().min(1),
-  ALCHEMY_WEBHOOK_AUTH_TOKEN: z.string().optional(),
-  ALCHEMY_WEBHOOK_ID: z.string().optional(),
+  // Goldsky Mirror (webhook raw secret — NOT HMAC)
+  GOLDSKY_WEBHOOK_SECRET: z.string().min(1),
 
   // LLM
   LLM_API_KEY: z.string().min(1),

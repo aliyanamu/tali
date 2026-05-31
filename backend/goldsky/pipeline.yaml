@@ -1,0 +1,33 @@
+# Goldsky Mirror pipeline — Mantle ERC-20 Transfer events for watched wallets.
+# Deploy: goldsky pipeline apply --path backend/goldsky/pipeline.yaml
+# Update addresses: edit the SQL WHERE clause below, then redeploy.
+#
+# NOTE: Native MNT transfers are NOT included (erc20_transfers only covers ERC-20 logs).
+# Native MNT is tracked via direct RPC balance calls in tali-cli networth.
+
+name: tali-mantle-erc20-transfers
+resource_size: s
+apiVersion: 3
+
+sources:
+  mantle_erc20_transfers:
+    dataset_name: mantle.erc20_transfers
+    version: 1.0.0
+    type: dataset
+    start_at: latest
+
+transforms:
+  watched_only:
+    primary_key: id
+    sql: >
+      SELECT * FROM mantle_erc20_transfers
+      WHERE sender    IN ('0x8a5b7bbaba77920744bd91643cc0e16a8acff061')
+         OR recipient IN ('0x8a5b7bbaba77920744bd91643cc0e16a8acff061')
+
+sinks:
+  tali_webhook:
+    type: webhook
+    from: watched_only
+    url: https://<YOUR_TUNNEL_URL>/webhooks/goldsky
+    secret_name: TALI_WEBHOOK_SECRET
+    one_row_per_request: true

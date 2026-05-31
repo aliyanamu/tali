@@ -55,14 +55,14 @@ await db
     linkedUserId: 'cmptj8akr00cd0dl1rv7vf7ay',
     email: 'mufidah.hanaaliyah@gmail.com',
     linkedWalletId: 'l0frktpc4w0xk2sxtsw9cdbb',
-    walletAddress: '0x8a5B7bBAba77920744bd91643cc0E16A8aCFF061',
+    walletAddress: '0x8a5b7bbaba77920744bd91643cc0e16a8acff061',
     preferredCurrency: 'IDR',
   })
   .onConflictDoUpdate({
     target: schema.users.linkedUserId,
     set: {
       email: 'mufidah.hanaaliyah@gmail.com',
-      walletAddress: '0x8a5B7bBAba77920744bd91643cc0E16A8aCFF061',
+      walletAddress: '0x8a5b7bbaba77920744bd91643cc0e16a8acff061',
       preferredCurrency: 'IDR',
     },
   });

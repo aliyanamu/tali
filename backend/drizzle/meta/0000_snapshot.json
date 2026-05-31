@@ -1,5 +1,5 @@
 {
-  "id": "b31b7339-fa1c-4a64-bed5-c95614991946",
+  "id": "3c59d427-3902-4cc8-8969-40f898f574eb",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -599,6 +599,12 @@
         "onchain_events_idempotency": {
           "name": "onchain_events_idempotency",
           "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
             {
               "expression": "chain_id",
               "isExpression": false,

@@ -33,12 +33,12 @@ const GoldskyTransferSchema = z.object({
   id: z.string(),
   sender: z.string(),
   recipient: z.string(),
-  amount: z.string(),                    // raw uint256 string
-  address: z.string().optional(),        // token contract address; absent for native
-  transaction_hash: z.string(),
-  block_number: z.number(),
-  block_timestamp: z.number(),           // unix seconds
-  log_index: z.number().optional(),
+  amount: z.string().regex(/^\d{1,78}$/, 'must be a non-negative uint256 decimal string'),
+  address: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional(), // token contract address; absent for native
+  transaction_hash: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+  block_number: z.number().int(),
+  block_timestamp: z.number().int(),     // unix seconds
+  log_index: z.number().int().optional(),
 });
 
 // Mirror webhook sink sends a flat array of rows (one row per request when one_row_per_request: true).
@@ -89,7 +89,7 @@ export async function handleGoldskyWebhook(c: Context): Promise<Response> {
     const tokenAddr = row.address?.toLowerCase() ?? null;
     const asset = tokenAddr
       ? await db.query.assets.findFirst({
-          where: (a, { eq }) => eq(a.tokenAddress, tokenAddr),
+          where: (a, { and, eq }) => and(eq(a.chainId, chainId), eq(a.tokenAddress, tokenAddr)),
         })
       : await db.query.assets.findFirst({
           where: (a, { and, eq, isNull }) => and(eq(a.chainId, chainId), isNull(a.tokenAddress)),

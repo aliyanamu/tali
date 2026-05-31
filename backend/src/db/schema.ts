@@ -120,7 +120,7 @@ export const onchainEvents = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    onchainIdempotency: uniqueIndex('onchain_events_idempotency').on(t.chainId, t.txHash, t.logIndex),
+    onchainIdempotency: uniqueIndex('onchain_events_idempotency').on(t.userId, t.chainId, t.txHash, t.logIndex),
     userCreatedAt: index('onchain_events_user_created_at').on(t.userId, t.createdAt),
     userChainCreatedAt: index('onchain_events_user_chain_created_at').on(t.userId, t.chainId, t.createdAt),
     tokenAddressIdx: index('onchain_events_token_address_idx').on(t.tokenAddress),

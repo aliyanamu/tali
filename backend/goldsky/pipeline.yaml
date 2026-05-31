@@ -28,6 +28,14 @@ sinks:
   tali_webhook:
     type: webhook
     from: watched_only
-    url: https://<YOUR_TUNNEL_URL>/webhooks/goldsky
+    # URL is read from the TALI_WEBHOOK_URL secret stored in Goldsky.
+    # To set it:
+    #   goldsky secret upsert TALI_WEBHOOK_URL https://your-server.example.com/webhooks/goldsky
+    # Local dev:   goldsky secret upsert TALI_WEBHOOK_URL https://xxx.ngrok-free.app/webhooks/goldsky
+    # Production:  goldsky secret upsert TALI_WEBHOOK_URL https://your-railway-app.up.railway.app/webhooks/goldsky
+    url: ${TALI_WEBHOOK_URL}
+    # TALI_WEBHOOK_SECRET value is sent as the 'goldsky-webhook-secret' header on every delivery.
+    # The value of this Goldsky secret must match GOLDSKY_WEBHOOK_SECRET in backend/.env.
+    # To set it:  goldsky secret upsert TALI_WEBHOOK_SECRET <your-secret-value>
     secret_name: TALI_WEBHOOK_SECRET
     one_row_per_request: true

@@ -173,7 +173,7 @@ CREATE INDEX IF NOT EXISTS "recon_offchain_entry_id_idx" ON "event_reconciliatio
 CREATE UNIQUE INDEX IF NOT EXISTS "recon_active_pair_unique" ON "event_reconciliations" USING btree ("onchain_event_id","offchain_entry_id") WHERE "event_reconciliations"."deleted_at" IS NULL;--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "offchain_entries_user_created_at" ON "offchain_entries" USING btree ("user_id","created_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "offchain_entries_user_occurred_at" ON "offchain_entries" USING btree ("user_id","occurred_at");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "onchain_events_idempotency" ON "onchain_events" USING btree ("chain_id","tx_hash","log_index");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "onchain_events_idempotency" ON "onchain_events" USING btree ("user_id","chain_id","tx_hash","log_index");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "onchain_events_user_created_at" ON "onchain_events" USING btree ("user_id","created_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "onchain_events_user_chain_created_at" ON "onchain_events" USING btree ("user_id","chain_id","created_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "onchain_events_token_address_idx" ON "onchain_events" USING btree ("token_address");--> statement-breakpoint

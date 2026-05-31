@@ -8,12 +8,14 @@
   },
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
+    "dev:poller": "tsx watch --env-file=.env src/poller/run.ts",
     "dev:cli": "tsx --env-file=.env src/cli/index.ts",
     "start": "node --env-file=.env dist/index.js",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file=.env src/db/migrate.ts",
+    "db:seed": "tsx --env-file=.env src/db/seed.ts",
     "db:reset": "tsx --env-file=.env src/db/reset.ts"
   },
   "dependencies": {
@@ -28,11 +30,13 @@
     "hono": "^4.6.5",
     "pino": "^9.5.0",
     "postgres": "^3.4.5",
+    "uuid": "^14.0.0",
     "viem": "^2.21.25",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",
+    "@types/uuid": "^11.0.0",
     "drizzle-kit": "^0.28.0",
     "pino-pretty": "^11.3.0",
     "tsx": "^4.19.1",

@@ -5,10 +5,8 @@ const EnvSchema = z.object({
   PRIVY_APP_ID: z.string().min(1),
   PRIVY_APP_SECRET: z.string().min(1),
 
-  // Alchemy Notify (webhook HMAC + address management)
-  ALCHEMY_WEBHOOK_SECRET: z.string().min(1),
-  ALCHEMY_WEBHOOK_AUTH_TOKEN: z.string().optional(),
-  ALCHEMY_WEBHOOK_ID: z.string().optional(),
+  // Goldsky Mirror (webhook raw secret — NOT HMAC)
+  GOLDSKY_WEBHOOK_SECRET: z.string().min(1),
 
   // LLM
   LLM_API_KEY: z.string().min(1),
@@ -20,6 +18,9 @@ const EnvSchema = z.object({
   // Mantle chain config (ERC-8004 NFT + on-chain attestation)
   MANTLE_CHAIN_ID: z.coerce.number().default(5000),
   MANTLE_ALCHEMY_RPC: z.string().url(),
+  // Mantle testnet (Sepolia) — when set, starts the RPC poll loop for local dev/testing
+  MANTLE_TESTNET_RPC: z.string().url().optional(),
+  POLL_INTERVAL_MS: z.coerce.number().default(5000),
   SOLANA_HELIUS_RPC: z.string().url().optional(),
   SOLANA_ALCHEMY_RPC: z.string().url().optional(),
 

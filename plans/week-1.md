@@ -28,8 +28,8 @@ Mufidah can run `tali-cli networth` and see her IDR net worth, and a `byreal-cli
 **tali-cli**
 - [x] ✅ `tali-cli networth --wallet <address>` — tested live on Mantle Sepolia; returns MNT balance + IDR total
 - [x] ✅ `tali-cli` available globally via `pnpm link --global` (dev wrapper using local tsx)
-- [ ] 🟡 `tali-cli skill` — SKILL.md registration ready; smoke-test after install
-- [ ] 🔲 Token addresses in `tokens.ts` verified on mantlescan.xyz
+- [x] ✅ `tali-cli skill` — SKILL.md registration ready; smoke-tested live
+- [x] ✅ Token addresses in `tokens.ts` verified — USDC/USDT match Forge broadcast (Mantle Sepolia chain 5003)
 - [ ] 🔲 Alchemy Webhook configured (Transfer events on Mantle for user wallet) — do after webhook server + wallet address are ready
 - [ ] 🔲 Alchemy webhook server receiving real events end-to-end
 

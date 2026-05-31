@@ -1,106 +1,378 @@
 {
-  "id": "398f3025-9fbd-4f52-82b7-5212de250297",
+  "id": "3c59d427-3902-4cc8-8969-40f898f574eb",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.events": {
-      "name": "events",
+    "public.assets": {
+      "name": "assets",
+      "schema": "",
+      "columns": {
+        "code": {
+          "name": "code",
+          "type": "varchar(16)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "symbol": {
+          "name": "symbol",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "decimals": {
+          "name": "decimals",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asset_type": {
+          "name": "asset_type",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "coingecko_id": {
+          "name": "coingecko_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vs_currency": {
+          "name": "vs_currency",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_address": {
+          "name": "token_address",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "assets_token_address_unique": {
+          "name": "assets_token_address_unique",
+          "columns": [
+            {
+              "expression": "chain_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "token_address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"assets\".\"token_address\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "assets_chain_id_networks_chain_id_fk": {
+          "name": "assets_chain_id_networks_chain_id_fk",
+          "tableFrom": "assets",
+          "tableTo": "networks",
+          "columnsFrom": [
+            "chain_id"
+          ],
+          "columnsTo": [
+            "chain_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "assets_decimals_range": {
+          "name": "assets_decimals_range",
+          "value": "\"assets\".\"decimals\" >= 0 AND \"assets\".\"decimals\" <= 77"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.event_reconciliations": {
+      "name": "event_reconciliations",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "onchain_event_id": {
+          "name": "onchain_event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "offchain_entry_id": {
+          "name": "offchain_entry_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "recon_onchain_event_id_idx": {
+          "name": "recon_onchain_event_id_idx",
+          "columns": [
+            {
+              "expression": "onchain_event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "recon_offchain_entry_id_idx": {
+          "name": "recon_offchain_entry_id_idx",
+          "columns": [
+            {
+              "expression": "offchain_entry_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "recon_active_pair_unique": {
+          "name": "recon_active_pair_unique",
+          "columns": [
+            {
+              "expression": "onchain_event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "offchain_entry_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"event_reconciliations\".\"deleted_at\" IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_reconciliations_onchain_event_id_onchain_events_id_fk": {
+          "name": "event_reconciliations_onchain_event_id_onchain_events_id_fk",
+          "tableFrom": "event_reconciliations",
+          "tableTo": "onchain_events",
+          "columnsFrom": [
+            "onchain_event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "event_reconciliations_offchain_entry_id_offchain_entries_id_fk": {
+          "name": "event_reconciliations_offchain_entry_id_offchain_entries_id_fk",
+          "tableFrom": "event_reconciliations",
+          "tableTo": "offchain_entries",
+          "columnsFrom": [
+            "offchain_entry_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.networks": {
+      "name": "networks",
+      "schema": "",
+      "columns": {
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rpc_url": {
+          "name": "rpc_url",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "explorer_url": {
+          "name": "explorer_url",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "native_currency_code": {
+          "name": "native_currency_code",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_testnet": {
+          "name": "is_testnet",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.offchain_entries": {
+      "name": "offchain_entries",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "user_id": {
           "name": "user_id",
-          "type": "integer",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "kind": {
           "name": "kind",
-          "type": "varchar(32)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "onchain_chain_id": {
-          "name": "onchain_chain_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "onchain_tx_hash": {
-          "name": "onchain_tx_hash",
-          "type": "varchar(66)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "onchain_log_index": {
-          "name": "onchain_log_index",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "onchain_block_number": {
-          "name": "onchain_block_number",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "onchain_amount": {
-          "name": "onchain_amount",
-          "type": "varchar(80)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "onchain_token": {
-          "name": "onchain_token",
-          "type": "varchar(42)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "onchain_from": {
-          "name": "onchain_from",
-          "type": "varchar(42)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "onchain_to": {
-          "name": "onchain_to",
-          "type": "varchar(42)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "offchain_amount_idr_micro": {
-          "name": "offchain_amount_idr_micro",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "offchain_source": {
-          "name": "offchain_source",
           "type": "varchar(64)",
           "primaryKey": false,
           "notNull": false
         },
-        "offchain_note": {
-          "name": "offchain_note",
-          "type": "varchar(512)",
+        "direction": {
+          "name": "direction",
+          "type": "varchar(8)",
           "primaryKey": false,
           "notNull": false
         },
-        "link_id": {
-          "name": "link_id",
+        "amount_fiat": {
+          "name": "amount_fiat",
+          "type": "numeric(20, 0)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "currency_code": {
+          "name": "currency_code",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rate_at_time": {
+          "name": "rate_at_time",
+          "type": "numeric(24, 12)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "asset_code": {
+          "name": "asset_code",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount_decimal": {
+          "name": "amount_decimal",
+          "type": "numeric(20, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
           "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "raw_payload": {
-          "name": "raw_payload",
-          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         },
@@ -113,35 +385,8 @@
         }
       },
       "indexes": {
-        "events_onchain_idempotency": {
-          "name": "events_onchain_idempotency",
-          "columns": [
-            {
-              "expression": "onchain_chain_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "onchain_tx_hash",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "onchain_log_index",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "events_user_created_at": {
-          "name": "events_user_created_at",
+        "offchain_entries_user_created_at": {
+          "name": "offchain_entries_user_created_at",
           "columns": [
             {
               "expression": "user_id",
@@ -161,11 +406,17 @@
           "method": "btree",
           "with": {}
         },
-        "events_link_id": {
-          "name": "events_link_id",
+        "offchain_entries_user_occurred_at": {
+          "name": "offchain_entries_user_occurred_at",
           "columns": [
             {
-              "expression": "link_id",
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -178,9 +429,9 @@
         }
       },
       "foreignKeys": {
-        "events_user_id_users_id_fk": {
-          "name": "events_user_id_users_id_fk",
-          "tableFrom": "events",
+        "offchain_entries_user_id_users_id_fk": {
+          "name": "offchain_entries_user_id_users_id_fk",
+          "tableFrom": "offchain_entries",
           "tableTo": "users",
           "columnsFrom": [
             "user_id"
@@ -190,46 +441,149 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
+        },
+        "offchain_entries_currency_code_assets_code_fk": {
+          "name": "offchain_entries_currency_code_assets_code_fk",
+          "tableFrom": "offchain_entries",
+          "tableTo": "assets",
+          "columnsFrom": [
+            "currency_code"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "offchain_entries_asset_code_assets_code_fk": {
+          "name": "offchain_entries_asset_code_assets_code_fk",
+          "tableFrom": "offchain_entries",
+          "tableTo": "assets",
+          "columnsFrom": [
+            "asset_code"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "offchain_entries_direction_check": {
+          "name": "offchain_entries_direction_check",
+          "value": "\"offchain_entries\".\"direction\" IN ('inflow', 'outflow', 'neutral')"
+        }
+      },
       "isRLSEnabled": false
     },
-    "public.users": {
-      "name": "users",
+    "public.onchain_events": {
+      "name": "onchain_events",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
-        "telegram_id": {
-          "name": "telegram_id",
-          "type": "bigint",
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "lang": {
-          "name": "lang",
-          "type": "varchar(8)",
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tx_hash": {
+          "name": "tx_hash",
+          "type": "varchar(66)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "log_index": {
+          "name": "log_index",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "'en'"
+          "default": 0
         },
-        "privy_wallet_id": {
-          "name": "privy_wallet_id",
-          "type": "varchar(128)",
+        "block_number": {
+          "name": "block_number",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": false
         },
-        "wallet_address": {
-          "name": "wallet_address",
-          "type": "varchar(42)",
+        "confirmed_at": {
+          "name": "confirmed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "direction": {
+          "name": "direction",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "asset_code": {
+          "name": "asset_code",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount_raw": {
+          "name": "amount_raw",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount_decimal": {
+          "name": "amount_decimal",
+          "type": "numeric(20, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_address": {
+          "name": "token_address",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "from_address": {
+          "name": "from_address",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_address": {
+          "name": "to_address",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "raw_payload": {
+          "name": "raw_payload",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         },
@@ -241,15 +595,263 @@
           "default": "now()"
         }
       },
+      "indexes": {
+        "onchain_events_idempotency": {
+          "name": "onchain_events_idempotency",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "chain_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "tx_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "log_index",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "onchain_events_user_created_at": {
+          "name": "onchain_events_user_created_at",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "onchain_events_user_chain_created_at": {
+          "name": "onchain_events_user_chain_created_at",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "chain_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "onchain_events_token_address_idx": {
+          "name": "onchain_events_token_address_idx",
+          "columns": [
+            {
+              "expression": "token_address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "onchain_events_user_id_users_id_fk": {
+          "name": "onchain_events_user_id_users_id_fk",
+          "tableFrom": "onchain_events",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "onchain_events_chain_id_networks_chain_id_fk": {
+          "name": "onchain_events_chain_id_networks_chain_id_fk",
+          "tableFrom": "onchain_events",
+          "tableTo": "networks",
+          "columnsFrom": [
+            "chain_id"
+          ],
+          "columnsTo": [
+            "chain_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "onchain_events_asset_code_assets_code_fk": {
+          "name": "onchain_events_asset_code_assets_code_fk",
+          "tableFrom": "onchain_events",
+          "tableTo": "assets",
+          "columnsFrom": [
+            "asset_code"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "onchain_events_direction_check": {
+          "name": "onchain_events_direction_check",
+          "value": "\"onchain_events\".\"direction\" IN ('inflow', 'outflow', 'neutral')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "linked_user_id": {
+          "name": "linked_user_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lang": {
+          "name": "lang",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'en'"
+        },
+        "linked_wallet_id": {
+          "name": "linked_wallet_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wallet_address": {
+          "name": "wallet_address",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "preferred_currency": {
+          "name": "preferred_currency",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'IDR'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "users_preferred_currency_assets_code_fk": {
+          "name": "users_preferred_currency_assets_code_fk",
+          "tableFrom": "users",
+          "tableTo": "assets",
+          "columnsFrom": [
+            "preferred_currency"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "users_telegram_id_unique": {
-          "name": "users_telegram_id_unique",
+        "users_linked_user_id_unique": {
+          "name": "users_linked_user_id_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "telegram_id"
+            "linked_user_id"
+          ]
+        },
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        },
+        "users_linked_wallet_id_unique": {
+          "name": "users_linked_wallet_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "linked_wallet_id"
+          ]
+        },
+        "users_wallet_address_unique": {
+          "name": "users_wallet_address_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "wallet_address"
           ]
         }
       },
@@ -263,19 +865,25 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "user_id": {
           "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "chain_id": {
+          "name": "chain_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
         "address": {
           "name": "address",
-          "type": "varchar(42)",
+          "type": "varchar(64)",
           "primaryKey": false,
           "notNull": true
         },
@@ -285,15 +893,15 @@
           "primaryKey": false,
           "notNull": false
         },
-        "chain_id": {
-          "name": "chain_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 5000
-        },
         "created_at": {
           "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
@@ -327,6 +935,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "watched_wallets_address_idx": {
+          "name": "watched_wallets_address_idx",
+          "columns": [
+            {
+              "expression": "address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -339,6 +962,19 @@
           ],
           "columnsTo": [
             "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "watched_wallets_chain_id_networks_chain_id_fk": {
+          "name": "watched_wallets_chain_id_networks_chain_id_fk",
+          "tableFrom": "watched_wallets",
+          "tableTo": "networks",
+          "columnsFrom": [
+            "chain_id"
+          ],
+          "columnsTo": [
+            "chain_id"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"

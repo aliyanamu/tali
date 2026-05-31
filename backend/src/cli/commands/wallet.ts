@@ -1,44 +1,51 @@
 import { Command } from 'commander';
-import { eq } from 'drizzle-orm';
-import { env } from '../../lib/env.js';
+import { and, eq } from 'drizzle-orm';
 import { db, schema } from '../../db/index.js';
-import { addWatchAddress, removeWatchAddress } from '../../integrations/alchemy.js';
+import { addWatchAddress, removeWatchAddress } from '../../integrations/goldsky.js';
+
+async function getDemoUserId(): Promise<string> {
+  const user = await db.query.users.findFirst();
+  if (!user) {
+    console.error('No user found — run pnpm db:seed first');
+    process.exit(1);
+  }
+  return user.id;
+}
 
 export const walletCommand = new Command('wallet')
   .description('Manage watched wallets')
   .addCommand(
     new Command('watch')
-      .description('Add a wallet address to watch (registers with Alchemy + stores locally)')
+      .description('Add a wallet address to watch (registers locally + Goldsky pipeline)')
       .argument('<address>', 'EVM address to watch (0x...)')
       .option('--label <label>', 'Human-readable label, e.g. "MetaMask main"')
-      .option('--chain-id <chainId>', 'Chain ID (default: MANTLE_CHAIN_ID from env)', String(env.MANTLE_CHAIN_ID))
+      .option('--chain-id <chainId>', 'Chain ID', '5000')
       .option('-o, --output <format>', 'Output format: text | json', 'text')
       .action(async (address: string, opts: { label?: string; chainId: string; output: string }) => {
         const normalized = address.toLowerCase();
         const chainId = Number(opts.chainId);
+        const userId = await getDemoUserId();
 
         try {
           await addWatchAddress(normalized);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           if (opts.output === 'json') {
-            process.stderr.write(JSON.stringify({ success: false, error: message, hint: 'Check ALCHEMY_WEBHOOK_AUTH_TOKEN and ALCHEMY_WEBHOOK_ID in .env' }) + '\n');
+            process.stderr.write(JSON.stringify({ success: false, error: message }) + '\n');
           } else {
-            console.error(`✗ Alchemy registration failed: ${message}`);
-            console.error('  Set ALCHEMY_WEBHOOK_AUTH_TOKEN and ALCHEMY_WEBHOOK_ID in .env');
+            console.error(`✗ Goldsky registration failed: ${message}`);
           }
           process.exit(1);
         }
 
         await db
           .insert(schema.watchedWallets)
-          .values({ userId: 1, address: normalized, label: opts.label ?? null, chainId })
+          .values({ userId, address: normalized, label: opts.label ?? null, chainId })
           .onConflictDoNothing();
 
         if (opts.output === 'json') {
           console.log(JSON.stringify({ success: true, address: normalized, chainId, label: opts.label ?? null }));
         } else {
-          console.log(`✓ Registered with Alchemy webhook`);
           console.log(`✓ Saved to DB (chainId: ${chainId}${opts.label ? `, label: ${opts.label}` : ''})`);
           console.log(`\nWatching: ${normalized}`);
         }
@@ -48,9 +55,11 @@ export const walletCommand = new Command('wallet')
     new Command('unwatch')
       .description('Stop watching a wallet address')
       .argument('<address>', 'EVM address to unwatch (0x...)')
+      .option('--chain-id <chainId>', 'Chain ID', '5000')
       .option('-o, --output <format>', 'Output format: text | json', 'text')
-      .action(async (address: string, opts: { output: string }) => {
+      .action(async (address: string, opts: { chainId: string; output: string }) => {
         const normalized = address.toLowerCase();
+        const chainId = Number(opts.chainId);
 
         try {
           await removeWatchAddress(normalized);
@@ -59,20 +68,24 @@ export const walletCommand = new Command('wallet')
           if (opts.output === 'json') {
             process.stderr.write(JSON.stringify({ success: false, error: message }) + '\n');
           } else {
-            console.error(`✗ Alchemy deregistration failed: ${message}`);
+            console.error(`✗ Goldsky deregistration failed: ${message}`);
           }
           process.exit(1);
         }
 
         await db
           .delete(schema.watchedWallets)
-          .where(eq(schema.watchedWallets.address, normalized));
+          .where(
+            and(
+              eq(schema.watchedWallets.address, normalized),
+              eq(schema.watchedWallets.chainId, chainId),
+            ),
+          );
 
         if (opts.output === 'json') {
-          console.log(JSON.stringify({ success: true, address: normalized }));
+          console.log(JSON.stringify({ success: true, address: normalized, chainId }));
         } else {
-          console.log(`✓ Removed ${normalized} from Alchemy webhook`);
-          console.log(`✓ Removed from DB`);
+          console.log(`✓ Removed ${normalized} (chainId: ${chainId}) from DB`);
         }
       }),
   )
@@ -82,10 +95,17 @@ export const walletCommand = new Command('wallet')
       .option('-o, --output <format>', 'Output format: text | json', 'text')
       .action(async (opts: { output: string }) => {
         try {
-          const wallets = await db.select().from(schema.watchedWallets).orderBy(schema.watchedWallets.createdAt);
+          const wallets = await db
+            .select()
+            .from(schema.watchedWallets)
+            .orderBy(schema.watchedWallets.createdAt);
 
           if (opts.output === 'json') {
-            console.log(JSON.stringify({ wallets: wallets.map((w) => ({ address: w.address, chainId: w.chainId, label: w.label })) }));
+            console.log(
+              JSON.stringify({
+                wallets: wallets.map((w) => ({ address: w.address, chainId: w.chainId, label: w.label })),
+              }),
+            );
             return;
           }
 

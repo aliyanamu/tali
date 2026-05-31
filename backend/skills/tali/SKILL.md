@@ -47,17 +47,22 @@ which byreal-cli && byreal-cli --version
 
 ## Commands
 
-| Command | Description |
-|---|---|
-| `networth` | Show total IDR net worth across watched wallets |
-| `log` | Log a P2P trade or manual transaction in natural language |
-| `rules list` | List active autonomous rules |
-| `rules add <rule>` | Add a rule in natural language |
-| `rules remove <id>` | Remove a rule by ID |
-| `wallet watch <address>` | Add a wallet to watch (read-only) |
-| `wallet unwatch <address>` | Stop watching a wallet address |
-| `wallet list` | List all watched wallets |
-| `skill` | Print full skill documentation |
+| Command | Description | Status |
+|---|---|---|
+| `networth` | Show total IDR net worth across watched wallets | ✓ Live |
+| `history` | Show recent onchain transfers for watched wallets | ✓ Live |
+| `wallet watch <address>` | Add a wallet to watch (read-only) | ✓ Live |
+| `wallet unwatch <address>` | Stop watching a wallet address | ✓ Live |
+| `wallet list` | List all watched wallets | ✓ Live |
+| `log` | Log a P2P trade or manual transaction | ⏳ Week 2 |
+| `rules list` | List active autonomous rules | ⏳ Week 2 |
+| `rules add <rule>` | Add a rule in natural language | ⏳ Week 2 |
+| `rules remove <id>` | Remove a rule by ID | ⏳ Week 2 |
+| `skill` | Print full skill documentation | ✓ Live |
+
+## What Tali Records Automatically
+
+Tali's backend ingests onchain Transfer events in real time via **Goldsky Mirror** (production) and an optional **Mantle Sepolia RPC poller** (local dev). Every ERC-20 and native MNT transfer touching a watched wallet is recorded automatically — no manual logging needed for onchain activity. Use `tali-cli history` to query this data.
 
 ## Key Workflows
 
@@ -67,16 +72,12 @@ tali-cli networth --wallet <mantle-address>
 tali-cli networth --wallet <address> -o json
 ```
 
-### Log a P2P trade
+### View recent transfers
 ```bash
-tali-cli log "sold 50 USDT got 820000 IDR via Binance P2P"
-tali-cli log "received 1000000 IDR for 60 USDT from BCA transfer"
-```
-
-### Set up an autonomous rule
-```bash
-tali-cli rules add "when MNT balance > 500, farm yield on Byreal"
-tali-cli rules list
+tali-cli history
+tali-cli history --wallet <address>
+tali-cli history --wallet <address> --chain-id 5000 --limit 50
+tali-cli history -o json
 ```
 
 ### Watch a wallet
@@ -84,7 +85,18 @@ tali-cli rules list
 tali-cli wallet watch 0xABC... --label "MetaMask main"
 tali-cli wallet list
 tali-cli wallet list -o json
-tali-cli wallet unwatch 0xABC...
+tali-cli wallet unwatch 0xABC... --chain-id 5000
+```
+
+### Log a P2P trade (week 2)
+```bash
+tali-cli log "sold 50 USDT got 820000 IDR via Binance P2P"
+```
+
+### Set up an autonomous rule (week 2)
+```bash
+tali-cli rules add "when MNT balance > 500, farm yield on Byreal"
+tali-cli rules list
 ```
 
 ## Hard Constraints
@@ -100,7 +112,7 @@ tali-cli wallet unwatch 0xABC...
 - **Tali's role:** personal finance data layer — unified ledger, IDR net worth, P2P reconciliation, bank import
 - **Byreal's role:** DeFi execution — yield farming, DCA, swaps on Byreal/Solana
 - **Chain:** Mantle (ERC-8004 NFT, on-chain attestation), Solana (DeFi via byreal-cli)
-- **Event delivery:** Alchemy Webhooks push onchain Transfer events to Tali's backend
+- **Event delivery:** Goldsky Mirror webhook pushes onchain Transfer events to Tali's backend in real time
 - **Agent identity:** ERC-8004 NFT on Mantle records every agent action for on-chain reputation
 
 ## Environment Variables Required

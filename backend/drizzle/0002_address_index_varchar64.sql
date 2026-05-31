@@ -1,2 +1,0 @@
-ALTER TABLE "watched_wallets" ALTER COLUMN "address" SET DATA TYPE varchar(64);--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "watched_wallets_address_idx" ON "watched_wallets" USING btree ("address");

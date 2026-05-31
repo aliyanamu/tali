@@ -1,0 +1,58 @@
+# Goldsky Mirror pipeline — Mantle ERC-20 + native MNT Transfer events for watched wallets.
+# Deploy: goldsky pipeline apply --path backend/goldsky/pipeline.yaml
+#
+# Two sources → two sinks → same webhook URL:
+#   erc20_transfers  — ERC-20 Transfer log events
+#   transactions     — native MNT transfers (value > 0, status = success)
+
+name: tali-mantle-transfers
+resource_size: s
+apiVersion: 3
+
+sources:
+  mantle_erc20_transfers:
+    dataset_name: mantle.erc20_transfers
+    version: 1.0.0
+    type: dataset
+    # 'latest' means only transfers after pipeline deployment are delivered.
+    # Historical balances are still accurate via tali-cli networth (RPC balance query).
+    start_at: latest
+
+  mantle_transactions:
+    dataset_name: mantle.transactions
+    version: 1.0.0
+    type: dataset
+    start_at: latest
+
+transforms:
+  native_mnt_transfers:
+    primary_key: hash
+    sql: >
+      SELECT *
+      FROM mantle_transactions
+      WHERE CAST(value AS NUMERIC) > 0
+        AND receipt_status = 1
+        AND to_address IS NOT NULL
+
+sinks:
+  tali_webhook_erc20:
+    type: webhook
+    from: mantle_erc20_transfers
+    # TALI_WEBHOOK_URL: base URL without query params, e.g. https://xxx.ngrok-free.app/webhooks/goldsky
+    # Secret is injected as a custom header — never in the URL (would appear in server logs).
+    # Deploy with:
+    #   TALI_WEBHOOK_URL="https://xxx.ngrok-free.app/webhooks/goldsky" \
+    #   GOLDSKY_WEBHOOK_SECRET="<your-secret>" \
+    #     envsubst < backend/goldsky/pipeline.yaml | goldsky pipeline apply --path /dev/stdin
+    url: ${TALI_WEBHOOK_URL}
+    headers:
+      X-Goldsky-Secret: ${GOLDSKY_WEBHOOK_SECRET}
+    one_row_per_request: true
+
+  tali_webhook_native:
+    type: webhook
+    from: native_mnt_transfers
+    url: ${TALI_WEBHOOK_URL}
+    headers:
+      X-Goldsky-Secret: ${GOLDSKY_WEBHOOK_SECRET}
+    one_row_per_request: true

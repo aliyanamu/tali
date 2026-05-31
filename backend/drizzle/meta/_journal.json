@@ -15,6 +15,13 @@
       "when": 1748512800000,
       "tag": "0001_replace_telegram_id_with_handle",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780203423556,
+      "tag": "0002_fat_gideon",
+      "breakpoints": true
     }
   ]
 }

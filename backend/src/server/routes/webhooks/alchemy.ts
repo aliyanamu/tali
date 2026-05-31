@@ -67,7 +67,7 @@ async function insertEvent(params: {
       onchainChainId: env.MANTLE_CHAIN_ID,
       onchainTxHash: activity.hash,
       onchainLogIndex: logIndex,
-      onchainBlockNumber: BigInt(parseInt(activity.blockNum, 16)),
+      onchainBlockNumber: BigInt(parseInt(activity.blockNum, 16) || 0),
       onchainAmount: activity.rawContract.rawValue,
       onchainToken: activity.rawContract.address.toLowerCase() || null,
       onchainFrom: activity.fromAddress.toLowerCase(),
@@ -93,7 +93,7 @@ export async function handleAlchemyWebhook(c: Context): Promise<Response> {
   const rawBody = await c.req.text();
   const signature = c.req.header('x-alchemy-signature') ?? '';
 
-  if (!verifyHmacSha256(rawBody, env.ALCHEMY_WEBHOOK_SECRET ?? '', signature)) {
+  if (!verifyHmacSha256(rawBody, env.ALCHEMY_WEBHOOK_SECRET, signature)) {
     logger.warn('Alchemy webhook: invalid signature');
     return c.json({ error: 'invalid signature' }, 403);
   }

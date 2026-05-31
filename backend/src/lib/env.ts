@@ -1,19 +1,18 @@
 import { z } from 'zod';
 
 const EnvSchema = z.object({
-  // Privy (Tier 2 wallet management — required for wallet commands, not for networth)
-  PRIVY_APP_ID: z.string().optional(),
-  PRIVY_APP_SECRET: z.string().optional(),
+  // Privy (Tier 2 wallet management)
+  PRIVY_APP_ID: z.string().min(1),
+  PRIVY_APP_SECRET: z.string().min(1),
 
   // Alchemy Notify (webhook HMAC + address management)
-  ALCHEMY_WEBHOOK_SECRET: z.string().optional(),
+  ALCHEMY_WEBHOOK_SECRET: z.string().min(1),
   ALCHEMY_WEBHOOK_AUTH_TOKEN: z.string().optional(),
   ALCHEMY_WEBHOOK_ID: z.string().optional(),
 
-  // LLM (provider-agnostic — swap via LLM_PROVIDER)
-  LLM_PROVIDER: z.enum(['anthropic', 'openai', 'google']).default('anthropic'),
+  // LLM
   LLM_API_KEY: z.string().min(1),
-  LLM_MODEL: z.string().default('claude-haiku-4-5-20251001'),
+  LLM_MODEL: z.string().default('claude-sonnet-4-6'),
 
   // Postgres
   DATABASE_URL: z.string().min(1),

@@ -82,13 +82,14 @@ export const watchedWallets = pgTable(
     userId: integer('user_id')
       .notNull()
       .references(() => users.id),
-    address: varchar('address', { length: 42 }).notNull(),
+    address: varchar('address', { length: 64 }).notNull(),
     label: varchar('label', { length: 64 }),
     chainId: integer('chain_id').notNull().default(5000),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     userAddress: uniqueIndex('watched_user_chain_address').on(t.userId, t.chainId, t.address),
+    addressIdx: index('watched_wallets_address_idx').on(t.address),
   }),
 );
 

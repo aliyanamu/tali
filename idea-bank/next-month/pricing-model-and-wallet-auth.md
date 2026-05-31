@@ -41,27 +41,26 @@ is closest to Delta but gates on recording depth rather than connection count.
 
 ---
 
-## Wallet ownership verification (flagged, required before public launch)
+## Wallet ownership verification (narrower than originally framed)
 
-**Current gap:** `tali-cli wallet watch <address>` adds any address to `watched_wallets`
-with no proof of ownership. A user can add someone else's wallet and receive their transfer
-history.
+**Industry norm:** Delta, CoinTracker, Zapper, and DeBank all allow adding any public address
+with no ownership proof. Blockchain addresses are public by design — watching an address is a
+read-only observation, not a claim of ownership. Watching someone else's wallet (whale, treasury,
+friend) is expected and standard.
 
-**Required fix:** prove ownership before watching a wallet as "your own."
+`tali-cli wallet watch <address>` adding any address without verification is therefore **correct
+and industry-standard behavior.** No fix needed for watching.
 
-Standard approach — sign-message challenge (SIWE pattern):
-1. Server issues a nonce: `"Tali: verify ownership of <address> — nonce: <uuid>"`
-2. User signs with MetaMask / Phantom
-3. Server calls `viem.verifyMessage({ address, message, signature })` and stores the wallet
-   only if it matches
+**Where ownership proof actually matters — rule execution only.**
 
-This requires a frontend (OpenClaw skill UI or web app) since the CLI cannot drive MetaMask
-signing. For the hackathon demo this is not an attack vector (single-user), but it is a
-pre-launch blocker for any multi-user deployment.
+The real concern is autonomous rules: "sell X when condition met" should only fire on wallets
+the user actually controls. This is already gated:
+- Privy wallets (Tier 2) — Privy verifies server-side control at wallet creation; no extra auth needed.
+- MetaMask / Phantom (Tier 1) — user-signed transactions; the wallet can't be drained without the
+  user's key. Rule execution on Tier 1 wallets requires a push-to-device confirmation flow (already
+  in idea-bank as a later feature).
 
-**Distinction to preserve:**
-- "Watch" (read-only, no ownership proof) — valid for watching whales, protocol treasuries, etc.
-- "Add as mine" — requires signature proof, enables recording and personal finance features
-
-The `watched_wallets` table could add an `ownership_verified boolean default false` column
-to distinguish the two modes.
+**Nothing needs to change now.** If a multi-user product context ever requires distinguishing
+"this is my wallet" from "I'm watching this whale," add an `ownership_verified boolean default false`
+column to `watched_wallets` and gate personal-finance-specific features (alerts, net worth roll-up)
+on it. But this is not a pre-launch blocker — it's a product UX decision.

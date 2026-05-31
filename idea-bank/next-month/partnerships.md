@@ -9,14 +9,8 @@ Prioritised by effort-to-impact and ecosystem overlap.
 
 ## Tier 1 — Already in the Mantle Turing Hackathon ecosystem
 
-These partners are confirmed sponsors or judges of the hackathon Tali is competing in.
+Confirmed sponsors/judges per https://devhub.mantle.xyz/#partners (checked 2026-05-31).
 Engaging them during the hackathon window has the highest leverage.
-
-### Goldsky *(already integrated)*
-Real-time blockchain data streaming via Mirror CDC pipelines.
-Tali's Goldsky Mirror pipeline is live — this is the strongest existing partner story.
-**Opportunity:** co-marketing ("built with Goldsky Mirror"), deeper integration with
-Goldsky's subgraph query layer for on-demand history reads.
 
 ### Byreal *(already integrated)*
 Co-sponsor of the hackathon, runs the `byreal-cli` DeFi execution layer Tali uses.
@@ -48,8 +42,12 @@ Potential follow-on funding for strong submissions.
 
 ## Tier 2 — Data layer (evaluate when building history display)
 
+**Goldsky** is not a Mantle hackathon sponsor but is already integrated as Tali's streaming
+layer. The partners below are candidates for the on-demand history read path (free-tier feature).
+
 | Partner | What they offer | Why Tali |
 |---|---|---|
+| **Goldsky** *(already integrated)* | Real-time event streaming via Mirror CDC pipelines. Tali's mainnet ingestion runs on this. | Strongest existing partner story — co-marketing opportunity independent of the hackathon. Explore subgraph query layer for on-demand history reads. |
 | **GoldRush (Covalent)** | Single API call: all token balances + full tx history, block 0 to now. Mantle mainnet confirmed. GoldRush x402 adds per-request micropayment for agent use. | Leading candidate for free-tier history display once that feature is built. Simpler than raw viem calls. |
 | **Moralis** | Wallet history API, cross-chain, decoded events. Streams webhooks similar to Alchemy Notify. | Backup if GoldRush Mantle data is incomplete. Overlaps Goldsky for streaming — probably redundant. |
 | **The Graph** | Decentralised subgraph indexing, GraphQL. | Fallback indexer if Goldsky gaps appear. Higher ops overhead than hosted APIs. |
@@ -88,7 +86,7 @@ Not needed for current scope.
 ## Priority actions
 
 1. **Now**: make sure DoraHacks profile is complete before the submission deadline.
-2. **During demo**: reference Goldsky Mirror, Byreal, and Nansen by name — all are in the room.
+2. **During demo**: reference Byreal and Nansen by name — confirmed hackathon sponsors/judges. Goldsky is not a hackathon sponsor but worth mentioning as the data infra layer.
 3. **Post-hackathon**: evaluate GoldRush for history display feature.
 4. **Post-hackathon**: explore Phala TEE wrapper as a privacy/trust differentiator if Tali pitches to privacy-conscious markets.
 5. **Funding path**: Mirana Ventures (Mantle ecosystem fund) → Encode Club accelerator.

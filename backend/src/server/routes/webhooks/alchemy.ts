@@ -40,8 +40,8 @@ const AlchemyWebhookSchema = z.object({
   createdAt: z.string(),
   type: z.literal('ADDRESS_ACTIVITY'),
   event: z.object({
-    network: z.string(),
-    activity: z.array(AlchemyActivitySchema),
+    network: z.string().optional(),
+    activity: z.array(AlchemyActivitySchema).default([]),
   }),
 });
 

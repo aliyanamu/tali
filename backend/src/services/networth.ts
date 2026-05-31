@@ -23,7 +23,9 @@ export async function fetchNetworth(
   coingeckoApiKey?: string,
   chainId: number = 5000,
 ): Promise<NetworthResult> {
-  const tokenList = chainId === MANTLE_TESTNET_CHAIN_ID ? TESTNET_TOKENS : TOKENS;
+  const ZERO = '0x0000000000000000000000000000000000000000';
+  const tokenList = (chainId === MANTLE_TESTNET_CHAIN_ID ? TESTNET_TOKENS : TOKENS)
+    .filter((t) => t.isNative || t.address !== ZERO);
   const client = createMantleClient(rpcUrl);
   const erc20Tokens = tokenList.filter((t) => !t.isNative);
   const nativeToken = tokenList.find((t) => t.isNative)!;

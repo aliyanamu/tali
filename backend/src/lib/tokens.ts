@@ -49,7 +49,11 @@ export const TOKENS: TokenInfo[] = [
   },
 ];
 
-/** Mantle Sepolia testnet tokens (chain ID 5003). Only native MNT exists on testnet. */
+/**
+ * Mantle Sepolia testnet tokens (chain ID 5003).
+ * Mock USDC/USDT deployed via contracts/script/DeployMockTokens.s.sol.
+ * Update addresses after running: forge script script/DeployMockTokens.s.sol --rpc-url mantle_sepolia --broadcast
+ */
 export const TESTNET_TOKENS: TokenInfo[] = [
   {
     symbol: 'MNT',
@@ -57,5 +61,17 @@ export const TESTNET_TOKENS: TokenInfo[] = [
     decimals: 18,
     coingeckoId: 'mantle',
     isNative: true,
+  },
+  {
+    symbol: 'USDC',
+    address: '0x666dc1c2330b1a8e75eda4b73d0015dfc7733120',
+    decimals: 6,
+    coingeckoId: 'usd-coin',
+  },
+  {
+    symbol: 'USDT',
+    address: '0x5c8920f9e4eadb5458f798440c042524422e6ad7',
+    decimals: 6,
+    coingeckoId: 'tether',
   },
 ];

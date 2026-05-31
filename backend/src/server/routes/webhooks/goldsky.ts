@@ -23,24 +23,46 @@ function verifyGoldskySecret(incoming: string, expected: string): boolean {
 }
 
 // Goldsky Mirror mantle.erc20_transfers dataset field names.
-// NOTE: field names are sender/recipient/amount — NOT from/to/value (those are Alchemy's).
-const GoldskyTransferSchema = z.object({
+// NOTE: field names are sender/recipient/amount — NOT from/to/value.
+const GoldskyErc20Schema = z.object({
   id: z.string(),
   sender: z.string(),
   recipient: z.string(),
   amount: z.string().regex(/^\d{1,78}$/, 'must be a non-negative uint256 decimal string'),
-  address: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional(), // token contract address; absent for native
+  address: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional(), // token contract; absent for native
   transaction_hash: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
   block_number: z.number().int(),
   block_timestamp: z.number().int(), // unix seconds
   log_index: z.number().int().optional(),
 });
 
-// Mirror webhook sink sends a flat array of rows (one row per request when one_row_per_request: true).
+// Goldsky Mirror mantle.transactions dataset field names.
+// Only delivered when value > 0 AND receipt_status = 1 (filtered in pipeline transform).
+const GoldskyNativeTxSchema = z.object({
+  hash: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+  from_address: z.string(),
+  to_address: z.string(),
+  value: z.string(), // native MNT in wei, decimal string
+  block_number: z.number().int(),
+  block_timestamp: z.number().int(), // unix seconds
+  transaction_index: z.number().int(),
+  receipt_status: z.number().int(), // 1 = success
+});
+
+type ErcRow = z.infer<typeof GoldskyErc20Schema>;
+type NativeRow = z.infer<typeof GoldskyNativeTxSchema>;
+
+// Mirror webhook sinks send one row per request (one_row_per_request: true).
+// The union covers both erc20_transfers rows and transactions rows.
 const GoldskyPayloadSchema = z.union([
-  z.array(GoldskyTransferSchema),
-  GoldskyTransferSchema,
+  z.array(z.union([GoldskyErc20Schema, GoldskyNativeTxSchema])),
+  GoldskyErc20Schema,
+  GoldskyNativeTxSchema,
 ]);
+
+function isNativeRow(row: ErcRow | NativeRow): row is NativeRow {
+  return 'hash' in row && 'from_address' in row;
+}
 
 export async function handleGoldskyWebhook(c: Context): Promise<Response> {
   const rawBody = await c.req.text();
@@ -63,19 +85,35 @@ export async function handleGoldskyWebhook(c: Context): Promise<Response> {
     const rows = Array.isArray(parsed) ? parsed : [parsed];
 
     for (const row of rows) {
-      await ingestTransfer({
-        chainId: CHAIN_ID,
-        fromAddress: row.sender.toLowerCase(),
-        toAddress: row.recipient.toLowerCase(),
-        amountRaw: row.amount,
-        tokenAddress: row.address?.toLowerCase() ?? null,
-        txHash: row.transaction_hash,
-        logIndex: row.log_index ?? 0,
-        blockNumber: BigInt(row.block_number),
-        blockTimestamp: row.block_timestamp,
-        source: 'goldsky_mirror',
-        rawPayload: { ...row },
-      });
+      if (isNativeRow(row)) {
+        await ingestTransfer({
+          chainId: CHAIN_ID,
+          fromAddress: row.from_address.toLowerCase(),
+          toAddress: row.to_address.toLowerCase(),
+          amountRaw: row.value,
+          tokenAddress: null,
+          txHash: row.hash,
+          logIndex: -1, // sentinel: no log event emitted for native transfers
+          blockNumber: BigInt(row.block_number),
+          blockTimestamp: row.block_timestamp,
+          source: 'goldsky_mirror',
+          rawPayload: { ...row },
+        });
+      } else {
+        await ingestTransfer({
+          chainId: CHAIN_ID,
+          fromAddress: row.sender.toLowerCase(),
+          toAddress: row.recipient.toLowerCase(),
+          amountRaw: row.amount,
+          tokenAddress: row.address?.toLowerCase() ?? null,
+          txHash: row.transaction_hash,
+          logIndex: row.log_index ?? 0,
+          blockNumber: BigInt(row.block_number),
+          blockTimestamp: row.block_timestamp,
+          source: 'goldsky_mirror',
+          rawPayload: { ...row },
+        });
+      }
     }
 
     return c.json({ status: 'ok' });

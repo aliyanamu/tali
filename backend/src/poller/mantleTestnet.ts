@@ -1,4 +1,4 @@
-import { createPublicClient, defineChain, http, parseAbiItem } from 'viem';
+import { createPublicClient, defineChain, http, parseAbiItem, type Transaction } from 'viem';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '../db/index.js';
 import { logger } from '../lib/logger.js';
@@ -56,36 +56,57 @@ export function startMantleTestnetPoller(rpcUrl: string, intervalMs: number): ()
         return;
       }
 
-      // Two queries because eth_getLogs can't OR across different topic positions in one call
-      const [fromLogs, toLogs] = await Promise.all([
+      const watchedSet = new Set(watchedAddresses.map((a) => a.toLowerCase()));
+
+      // Build block range array for fetching full block data (native transfer detection)
+      const blockRange: bigint[] = [];
+      for (let b = fromBlock; b <= toBlock; b += 1n) blockRange.push(b);
+
+      // Fetch ERC-20 logs AND full blocks (with transactions) in parallel.
+      // Blocks give us both timestamps and native transfer data — one fetch covers both.
+      const [fromLogs, toLogs, blocks] = await Promise.all([
         client.getLogs({ event: TRANSFER_ABI, args: { from: watchedAddresses }, fromBlock, toBlock }),
         client.getLogs({ event: TRANSFER_ABI, args: { to: watchedAddresses }, fromBlock, toBlock }),
+        Promise.all(blockRange.map((blockNumber) => client.getBlock({ blockNumber, includeTransactions: true }))),
       ]);
 
+      // Build timestamp map from the fetched blocks
+      const blockTimestamps = new Map<bigint, number>();
+      for (const block of blocks) {
+        blockTimestamps.set(block.number!, Number(block.timestamp));
+      }
+
+      // Deduplicate ERC-20 logs (from + to queries can overlap)
       const seen = new Set<string>();
-      const allLogs = [...fromLogs, ...toLogs].filter((log) => {
+      const erc20Logs = [...fromLogs, ...toLogs].filter((log) => {
         const key = `${log.transactionHash}:${log.logIndex}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
       });
 
-      if (allLogs.length === 0) {
-        lastBlock = toBlock;
-        return;
-      }
-
-      // Batch fetch timestamps for unique block numbers seen in this poll window
-      const uniqueBlockNums = [...new Set(allLogs.map((l) => l.blockNumber!))];
-      const blockTimestamps = new Map<bigint, number>();
-      await Promise.all(
-        uniqueBlockNums.map(async (blockNumber) => {
-          const block = await client.getBlock({ blockNumber });
-          blockTimestamps.set(blockNumber, Number(block.timestamp));
-        }),
+      // Find native transfer candidates: value > 0, address matches a watched wallet
+      const nativeCandidates = blocks.flatMap((block) =>
+        (block.transactions as Transaction[]).filter(
+          (tx) =>
+            tx.value > 0n &&
+            tx.to !== null &&
+            (watchedSet.has(tx.to!.toLowerCase()) || watchedSet.has(tx.from.toLowerCase())),
+        ),
       );
 
-      for (const log of allLogs) {
+      // Fetch receipts for candidates only; filter out failed transactions
+      const successfulNative =
+        nativeCandidates.length > 0
+          ? await Promise.all(
+              nativeCandidates.map((tx) =>
+                client.getTransactionReceipt({ hash: tx.hash }).then((r) => ({ tx, ok: r.status === 'success' })),
+              ),
+            ).then((results) => results.filter((r) => r.ok).map((r) => r.tx))
+          : [];
+
+      // Ingest ERC-20 transfers
+      for (const log of erc20Logs) {
         if (!log.args.from || !log.args.to || log.args.value === undefined) continue;
 
         await ingestTransfer({
@@ -104,19 +125,46 @@ export function startMantleTestnetPoller(rpcUrl: string, intervalMs: number): ()
             transactionHash: log.transactionHash,
             address: log.address,
             logIndex: log.logIndex,
-            args: {
-              from: log.args.from,
-              to: log.args.to,
-              value: log.args.value.toString(),
-            },
+            args: { from: log.args.from, to: log.args.to, value: log.args.value.toString() },
           },
         });
       }
 
-      logger.info(
-        { fromBlock: fromBlock.toString(), toBlock: toBlock.toString(), logs: allLogs.length },
-        'Mantle testnet poll complete',
-      );
+      // Ingest native MNT transfers. logIndex -1 is a sentinel (no log event emitted for native transfers).
+      for (const tx of successfulNative) {
+        await ingestTransfer({
+          chainId: CHAIN_ID,
+          fromAddress: tx.from.toLowerCase(),
+          toAddress: tx.to!.toLowerCase(),
+          amountRaw: tx.value.toString(),
+          tokenAddress: null,
+          txHash: tx.hash,
+          logIndex: -1,
+          blockNumber: tx.blockNumber!,
+          blockTimestamp: blockTimestamps.get(tx.blockNumber!) ?? Math.floor(Date.now() / 1000),
+          source: 'rpc_poll',
+          rawPayload: {
+            blockNumber: tx.blockNumber?.toString(),
+            transactionHash: tx.hash,
+            transactionIndex: tx.transactionIndex,
+            from: tx.from,
+            to: tx.to,
+            value: tx.value.toString(),
+          },
+        });
+      }
+
+      if (erc20Logs.length > 0 || successfulNative.length > 0) {
+        logger.info(
+          {
+            fromBlock: fromBlock.toString(),
+            toBlock: toBlock.toString(),
+            erc20: erc20Logs.length,
+            native: successfulNative.length,
+          },
+          'Mantle testnet poll complete',
+        );
+      }
 
       lastBlock = toBlock;
     } catch (err) {

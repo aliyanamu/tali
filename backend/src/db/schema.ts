@@ -104,7 +104,7 @@ export const onchainEvents = pgTable(
     userId: uuid('user_id').notNull().references(() => users.id),
     chainId: integer('chain_id').notNull().references(() => networks.chainId),
     txHash: varchar('tx_hash', { length: 66 }).notNull(),
-    logIndex: integer('log_index').notNull().default(0), // 0 for native transfers (no log emitted)
+    logIndex: integer('log_index').notNull().default(0), // -1 sentinel for native transfers (no log emitted)
     blockNumber: bigint('block_number', { mode: 'bigint' }),
     confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
     kind: varchar('kind', { length: 32 }),           // open: transfer | swap | bridge | yield | ...

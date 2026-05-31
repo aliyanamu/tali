@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
+    "dev:poller": "tsx watch --env-file=.env src/poller/run.ts",
     "dev:cli": "tsx --env-file=.env src/cli/index.ts",
     "start": "node --env-file=.env dist/index.js",
     "build": "tsc",

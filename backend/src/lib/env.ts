@@ -5,8 +5,10 @@ const EnvSchema = z.object({
   PRIVY_APP_ID: z.string().optional(),
   PRIVY_APP_SECRET: z.string().optional(),
 
-  // Alchemy (webhook secret for HMAC verification)
+  // Alchemy Notify (webhook HMAC + address management)
   ALCHEMY_WEBHOOK_SECRET: z.string().optional(),
+  ALCHEMY_WEBHOOK_AUTH_TOKEN: z.string().optional(),
+  ALCHEMY_WEBHOOK_ID: z.string().optional(),
 
   // LLM (provider-agnostic — swap via LLM_PROVIDER)
   LLM_PROVIDER: z.enum(['anthropic', 'openai', 'google']).default('anthropic'),
@@ -28,7 +30,7 @@ const EnvSchema = z.object({
   ERC8004_NFT_CONTRACT: z.string().optional(),
 
   // Server
-  PORT: z.coerce.number().default(3000),
+  PORT: z.coerce.number().default(8000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 });

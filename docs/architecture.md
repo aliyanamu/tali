@@ -21,7 +21,7 @@ graph TD
     end
 
     subgraph Backend
-        GS[Goldsky Mirror<br/>webhook server · Hono]
+        GS[Alchemy Webhooks<br/>webhook server · Hono]
         PG[(Postgres<br/>unified event ledger)]
         ALC[Alchemy RPC<br/>Mantle state reads]
     end
@@ -50,6 +50,25 @@ graph TD
 
 ---
 
+## Chain separation: Mantle vs Solana
+
+Tali spans two chains with a clean division — you never cross the boundary in code.
+
+| | Mantle | Solana |
+|---|---|---|
+| **Purpose** | "Bank account" layer — balances, rules, identity | "DeFi execution" layer — yield, DCA, swaps |
+| **What lives here** | Watched wallets, MNT/USDT balances, `AutonomousRule.sol`, ERC-8004 NFT | Byreal CLMM positions, LP tokens |
+| **Who reads it** | `tali-cli` via any Mantle RPC URL (Alchemy, Chainstack, public, etc.) | `byreal-cli` — internally managed, you don't wire it |
+| **Who writes to it** | Privy wallet (user-signed), `AutonomousRule.sol` | `byreal-cli` keypair (`~/.config/byreal/keys/`) |
+| **Real-time events** | Alchemy Webhooks pushes Transfer events to webhook server | Not needed — byreal-cli polls its own state |
+| **What you need to set up** | A Mantle RPC URL in `MANTLE_RPC` env var | Run `byreal-cli setup` — it handles everything |
+
+> **Scaling note:** Alchemy Webhooks is used for the hackathon (less setup, same Alchemy account). At scale, replace with **Goldsky Mirror** — it's purpose-built for high-volume onchain event streaming, handles re-orgs natively, and supports custom pipeline transforms. The webhook server interface stays the same; only the event source changes.
+
+**Key rule:** Solana execution is fully encapsulated in `byreal-cli`. Tali's backend never imports a Solana library or holds a Solana RPC URL. If you need Solana state, ask `byreal-cli`.
+
+---
+
 ## Two-tier wallet model
 
 ```mermaid
@@ -68,13 +87,13 @@ graph LR
     PV -->|user signs each tx<br/>via passkey/OAuth| DASH
     PV -->|pre-authorizes rule scope| AR[AutonomousRule.sol]
     AR -->|agent invokes executeRule| DASH
-    BYR -->|signs Solana txs locally| DEX[Byreal DEX]
+    BYR -->|signs Solana txs · server wallet now, user wallet later| DEX[Byreal DEX]
 ```
 
 **Reading the diagram:**
 - **Tier 1** wallets are visible to Tali but Tali has no signing authority.
 - **Privy** wallet handles Mantle — user signs manually or pre-authorizes a rule scope once.
-- **byreal-cli keypair** handles Solana DeFi — local signing, never transmitted.
+- **byreal-cli keypair** handles Solana DeFi. Currently: dedicated server agent wallet at `~/.config/byreal/keys/` on the backend server (Option 2). Production target: user's own wallet via local OpenClaw execution (Option 1 — see § "Execution model").
 
 ---
 
@@ -87,7 +106,7 @@ flowchart LR
     end
 
     subgraph Tali backend
-        GS[Goldsky webhook]
+        GS[Alchemy Webhook]
         MATCH[Rule matcher]
         LOG[Ledger write]
     end
@@ -112,6 +131,50 @@ flowchart LR
 
 ---
 
+## Execution model: current vs. production
+
+### Option 2 — Server-side byreal-cli (hackathon implementation)
+
+`byreal-cli` is installed on the Tali backend server. When a rule fires, the server spawns it as a child process directly.
+
+```
+Alchemy Webhook → Rule matcher → Claude planner → ExecutionGateway
+                                                        ↓
+                                              ByreaCliExecutor
+                                              execSync('byreal-cli ...')
+                                              server agent wallet
+                                              (~/.config/byreal/keys/)
+```
+
+**Wallet isolation:** `byreal-cli` manages its own Solana keypair at `~/.config/byreal/keys/`. This directory is owned by the process user and is never accessed by the Hono webhook handler. The server runs a **dedicated agent wallet** (not the user's Phantom wallet) that is pre-funded for automated execution.
+
+**Code seam:** `backend/src/agent/executor.ts` — `ExecutionGateway` interface. Only `ByreaCliExecutor` is wired in production today. Swapping to Option 1 is a single implementation change behind this interface; all rule matching, Claude planning, and Mantle attestation code is unchanged.
+
+---
+
+### Option 1 — Push notification (production target, not yet implemented)
+
+When a rule fires, the server sends a push notification to the user's device. The user confirms; their local OpenClaw instance executes `byreal-cli` with **their own Phantom-connected wallet**. The server receives the result via a signed callback and attests on Mantle.
+
+```
+Alchemy Webhook → Rule matcher → Claude planner → ExecutionGateway
+                                                        ↓
+                                              PushNotificationExecutor   (not built)
+                                              → push to user device
+                                              → user confirms in OpenClaw
+                                              → local byreal-cli executes
+                                              → signed callback to server
+```
+
+**Why this is better long-term:**
+- User's own wallet signs Solana txs — no server-side key risk
+- byreal-cli uses user's full Byreal account state (positions, history)
+- Matches OpenClaw's intended local-execution model
+
+**Migration:** Implement `PushNotificationExecutor implements ExecutionGateway` in `backend/src/agent/executor.ts` and swap the factory in `createExecutor()`. No other files change.
+
+---
+
 ## Component responsibilities
 
 | Component | Owns | Never does |
@@ -119,7 +182,7 @@ flowchart LR
 | **Claude (agent brain)** | Reasoning, NL parsing, orchestrating skills | Sign transactions; store secrets |
 | **tali-cli** | Net worth, ledger writes, rule management, Mantle interactions | DeFi execution |
 | **byreal-cli** | DeFi execution on Byreal/Solana — yield, DCA, swaps, positions | Personal finance data |
-| **Goldsky Mirror** | Real-time event delivery via webhooks, re-org handling | On-demand state reads |
+| **Alchemy Webhooks** | Real-time Mantle Transfer events → webhook server (hackathon) | On-demand state reads |
 | **Alchemy RPC** | Mantle balance reads, on-demand state | Event watching |
 | **Privy** | Mantle wallet keys (split-key, non-custodial) | Make decisions autonomously |
 | **AutonomousRule.sol** | Store rule configs on Mantle, emit attestations | Execute Solana DeFi |

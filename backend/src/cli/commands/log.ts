@@ -6,11 +6,19 @@ export const logCommand = new Command('log')
   .option('-o, --output <format>', 'Output format: table (default) or json', 'table')
   .action(async (entry: string | undefined, opts: { output: string }) => {
     if (!entry) {
-      console.error('Provide a log entry, e.g.: tali-cli log "sold 50 USDT got 820000 IDR"');
+      if (opts.output === 'json') {
+        process.stderr.write(JSON.stringify({ success: false, error: 'Provide a log entry' }) + '\n');
+      } else {
+        console.error('Provide a log entry, e.g.: tali-cli log "sold 50 USDT got 820000 IDR"');
+      }
       process.exit(1);
     }
 
-    // TODO: wire Claude NL parser → ledger write → auto-link to onchain outflow
-    console.log(`[stub] Would parse and log: "${entry}"`);
-    console.log('P2P reconciliation not yet implemented — coming in week 2.');
+    // Not implemented — P2P reconciliation ships in week 2
+    if (opts.output === 'json') {
+      process.stderr.write(JSON.stringify({ success: false, error: 'Not implemented — P2P reconciliation ships in week 2' }) + '\n');
+    } else {
+      console.error('P2P reconciliation not yet implemented — coming in week 2.');
+    }
+    process.exit(1);
   });

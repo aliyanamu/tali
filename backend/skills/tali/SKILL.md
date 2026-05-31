@@ -55,6 +55,7 @@ which byreal-cli && byreal-cli --version
 | `rules add <rule>` | Add a rule in natural language |
 | `rules remove <id>` | Remove a rule by ID |
 | `wallet watch <address>` | Add a wallet to watch (read-only) |
+| `wallet unwatch <address>` | Stop watching a wallet address |
 | `wallet list` | List all watched wallets |
 | `skill` | Print full skill documentation |
 
@@ -82,6 +83,8 @@ tali-cli rules list
 ```bash
 tali-cli wallet watch 0xABC... --label "MetaMask main"
 tali-cli wallet list
+tali-cli wallet list -o json
+tali-cli wallet unwatch 0xABC...
 ```
 
 ## Hard Constraints
@@ -97,14 +100,17 @@ tali-cli wallet list
 - **Tali's role:** personal finance data layer — unified ledger, IDR net worth, P2P reconciliation, bank import
 - **Byreal's role:** DeFi execution — yield farming, DCA, swaps on Byreal/Solana
 - **Chain:** Mantle (ERC-8004 NFT, on-chain attestation), Solana (DeFi via byreal-cli)
-- **Event delivery:** Goldsky Mirror webhooks push onchain events to Tali's backend
+- **Event delivery:** Alchemy Webhooks push onchain Transfer events to Tali's backend
 - **Agent identity:** ERC-8004 NFT on Mantle records every agent action for on-chain reputation
 
 ## Environment Variables Required
 
 ```
-ALCHEMY_MANTLE_RPC=https://mantle-mainnet.g.alchemy.com/v2/<key>
-COINGECKO_API_KEY=<key>
-ANTHROPIC_API_KEY=<key>
+MANTLE_ALCHEMY_RPC=https://rpc.mantle.xyz          # or https://rpc.sepolia.mantle.xyz for testnet
+SOLANA_HELIUS_RPC=https://mainnet.helius-rpc.com/?api-key=<key>
+LLM_PROVIDER=anthropic                              # anthropic | openai | google
+LLM_API_KEY=<key>
+LLM_MODEL=claude-haiku-4-5-20251001
 DATABASE_URL=postgresql://...
+COINGECKO_API_KEY=                                  # optional — free tier works without a key
 ```

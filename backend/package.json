@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "bin": {
-    "tali-cli": "dist/cli/index.cjs"
+    "tali-cli": "bin/tali-cli"
   },
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
@@ -17,9 +17,12 @@
     "db:reset": "tsx --env-file=.env src/db/reset.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
+    "@ai-sdk/anthropic": "^3.0.81",
+    "@ai-sdk/google": "^3.0.80",
+    "@ai-sdk/openai": "^3.0.66",
     "@hono/node-server": "^1.13.2",
     "@privy-io/server-auth": "^1.18.4",
+    "ai": "^6.0.193",
     "commander": "^12.1.0",
     "drizzle-orm": "^0.36.0",
     "hono": "^4.6.5",

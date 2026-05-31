@@ -4,7 +4,7 @@ const TTL_MS = 5 * 60 * 1000;
 
 export async function getPricesInIdr(
   coingeckoIds: string[],
-  apiKey: string,
+  apiKey?: string,
 ): Promise<Record<string, number>> {
   const now = Date.now();
   const result: Record<string, number> = {};
@@ -24,7 +24,7 @@ export async function getPricesInIdr(
   const url = new URL('https://api.coingecko.com/api/v3/simple/price');
   url.searchParams.set('ids', stale.join(','));
   url.searchParams.set('vs_currencies', 'idr');
-  url.searchParams.set('x_cg_demo_api_key', apiKey);
+  if (apiKey) url.searchParams.set('x_cg_demo_api_key', apiKey);
 
   try {
     const res = await fetch(url);

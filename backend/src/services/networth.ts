@@ -1,7 +1,7 @@
 import { erc20Abi, formatUnits, type Address } from 'viem';
 import { createMantleClient } from '../lib/chain.js';
 import { getPricesInIdr } from '../lib/prices.js';
-import { TOKENS } from '../lib/tokens.js';
+import { TOKENS, TESTNET_TOKENS } from '../lib/tokens.js';
 
 export type TokenBalance = {
   symbol: string;
@@ -15,14 +15,20 @@ export type NetworthResult = {
   tokens: TokenBalance[];
 };
 
+const MANTLE_TESTNET_CHAIN_ID = 5003;
+
 export async function fetchNetworth(
   wallet: Address,
   rpcUrl: string,
-  coingeckoApiKey: string,
+  coingeckoApiKey?: string,
+  chainId: number = 5000,
 ): Promise<NetworthResult> {
+  const ZERO = '0x0000000000000000000000000000000000000000';
+  const tokenList = (chainId === MANTLE_TESTNET_CHAIN_ID ? TESTNET_TOKENS : TOKENS)
+    .filter((t) => t.isNative || t.address !== ZERO);
   const client = createMantleClient(rpcUrl);
-  const erc20Tokens = TOKENS.filter((t) => !t.isNative);
-  const nativeToken = TOKENS.find((t) => t.isNative)!;
+  const erc20Tokens = tokenList.filter((t) => !t.isNative);
+  const nativeToken = tokenList.find((t) => t.isNative)!;
 
   const [mntBalance, ...erc20Balances] = await Promise.all([
     client.getBalance({ address: wallet }),
@@ -37,7 +43,7 @@ export async function fetchNetworth(
   ]);
 
   const prices = await getPricesInIdr(
-    TOKENS.map((t) => t.coingeckoId),
+    tokenList.map((t) => t.coingeckoId),
     coingeckoApiKey,
   );
 

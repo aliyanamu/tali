@@ -7,11 +7,11 @@ export const networthCommand = new Command('networth')
   .option('-w, --wallet <address>', 'Mantle wallet address to query')
   .option('-o, --output <format>', 'Output format: table (default) or json', 'table')
   .action(async (opts: { wallet?: string; output: string }) => {
-    const rpcUrl = process.env.ALCHEMY_MANTLE_RPC;
-    const coingeckoKey = process.env.COINGECKO_API_KEY;
+    const rpcUrl = process.env.MANTLE_ALCHEMY_RPC;
+    const coingeckoKey = process.env.COINGECKO_API_KEY; // optional; omit for free-tier
 
-    if (!rpcUrl || !coingeckoKey) {
-      console.error('Missing ALCHEMY_MANTLE_RPC or COINGECKO_API_KEY in environment.');
+    if (!rpcUrl) {
+      console.error('Missing MANTLE_ALCHEMY_RPC in environment.');
       process.exit(1);
     }
 
@@ -20,7 +20,8 @@ export const networthCommand = new Command('networth')
       process.exit(1);
     }
 
-    const result = await fetchNetworth(opts.wallet as Address, rpcUrl, coingeckoKey);
+    const chainId = Number(process.env.MANTLE_CHAIN_ID ?? 5000);
+    const result = await fetchNetworth(opts.wallet as Address, rpcUrl, coingeckoKey, chainId);
 
     if (opts.output === 'json') {
       console.log(JSON.stringify(result, null, 2));

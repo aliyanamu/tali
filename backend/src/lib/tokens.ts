@@ -10,15 +10,7 @@ export type TokenInfo = {
   isNative?: boolean;
 };
 
-/**
- * Mantle token registry.
- *
- * IMPORTANT: Verify each ERC-20 address on Mantle Explorer (mantlescan.xyz) before
- * relying on these for production. Addresses below are best-known references —
- * if any are wrong, balanceOf calls will fail or return zero.
- *
- * Native MNT is handled separately via publicClient.getBalance().
- */
+/** Mantle mainnet tokens (chain ID 5000). ERC-20 addresses verified on mantlescan.xyz. */
 export const TOKENS: TokenInfo[] = [
   {
     symbol: 'MNT',
@@ -54,5 +46,32 @@ export const TOKENS: TokenInfo[] = [
     address: '0x5bE26527e817998A7206475496fDE1E68957c5A6',
     decimals: 18,
     coingeckoId: 'ondo-us-dollar-yield',
+  },
+];
+
+/**
+ * Mantle Sepolia testnet tokens (chain ID 5003).
+ * Mock USDC/USDT deployed via contracts/script/DeployMockTokens.s.sol.
+ * Update addresses after running: forge script script/DeployMockTokens.s.sol --rpc-url mantle_sepolia --broadcast
+ */
+export const TESTNET_TOKENS: TokenInfo[] = [
+  {
+    symbol: 'MNT',
+    address: '0x0000000000000000000000000000000000000000',
+    decimals: 18,
+    coingeckoId: 'mantle',
+    isNative: true,
+  },
+  {
+    symbol: 'USDC',
+    address: '0x666dc1c2330b1a8e75eda4b73d0015dfc7733120',
+    decimals: 6,
+    coingeckoId: 'usd-coin',
+  },
+  {
+    symbol: 'USDT',
+    address: '0x5c8920f9e4eadb5458f798440c042524422e6ad7',
+    decimals: 6,
+    coingeckoId: 'tether',
   },
 ];

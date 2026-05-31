@@ -2,7 +2,7 @@ import { PrivyClient } from '@privy-io/server-auth';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
 
-const privy = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET);
+const privy = new PrivyClient(env.PRIVY_APP_ID ?? '', env.PRIVY_APP_SECRET ?? '');
 
 export type CreatedWallet = {
   walletId: string;
@@ -20,18 +20,14 @@ export type CreatedWallet = {
  * The wallet address is the same on every EVM chain (Mantle, Ethereum, Arbitrum, etc.).
  * We use Mantle by default for any transaction signing.
  */
-export async function createWalletForUser(telegramId: bigint): Promise<CreatedWallet> {
+export async function createWalletForUser(userId: number): Promise<CreatedWallet> {
   try {
     const wallet = await privy.walletApi.create({
       chainType: 'ethereum',
     });
 
     logger.info(
-      {
-        telegramId: telegramId.toString(),
-        walletId: wallet.id,
-        address: wallet.address,
-      },
+      { userId, walletId: wallet.id, address: wallet.address },
       'Created Privy wallet',
     );
 
@@ -40,10 +36,7 @@ export async function createWalletForUser(telegramId: bigint): Promise<CreatedWa
       address: wallet.address as `0x${string}`,
     };
   } catch (err) {
-    logger.error(
-      { err, telegramId: telegramId.toString() },
-      'Failed to create Privy wallet',
-    );
+    logger.error({ err, userId }, 'Failed to create Privy wallet');
     throw err;
   }
 }

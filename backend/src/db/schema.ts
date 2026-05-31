@@ -11,12 +11,13 @@ import {
 } from 'drizzle-orm/pg-core';
 
 /**
- * Users table — one row per Telegram-onboarded person.
+ * Users table — one row per OpenClaw skill user.
+ * Single-user for MVP; id=1 is the default user.
  * walletAddress is the Tier 2 Privy wallet address (same on all EVM chains).
  */
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
-  telegramId: bigint('telegram_id', { mode: 'bigint' }).notNull().unique(),
+  handle: varchar('handle', { length: 128 }).notNull().unique().default('default'),
   lang: varchar('lang', { length: 8 }).notNull().default('en'),
   privyWalletId: varchar('privy_wallet_id', { length: 128 }),
   walletAddress: varchar('wallet_address', { length: 42 }),
@@ -81,13 +82,14 @@ export const watchedWallets = pgTable(
     userId: integer('user_id')
       .notNull()
       .references(() => users.id),
-    address: varchar('address', { length: 42 }).notNull(),
+    address: varchar('address', { length: 64 }).notNull(),
     label: varchar('label', { length: 64 }),
     chainId: integer('chain_id').notNull().default(5000),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     userAddress: uniqueIndex('watched_user_chain_address').on(t.userId, t.chainId, t.address),
+    addressIdx: index('watched_wallets_address_idx').on(t.address),
   }),
 );
 

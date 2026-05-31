@@ -5,27 +5,31 @@ const EnvSchema = z.object({
   PRIVY_APP_ID: z.string().min(1),
   PRIVY_APP_SECRET: z.string().min(1),
 
-  // Goldsky (webhook secret for HMAC verification)
-  GOLDSKY_WEBHOOK_SECRET: z.string().min(1),
+  // Alchemy Notify (webhook HMAC + address management)
+  ALCHEMY_WEBHOOK_SECRET: z.string().min(1),
+  ALCHEMY_WEBHOOK_AUTH_TOKEN: z.string().optional(),
+  ALCHEMY_WEBHOOK_ID: z.string().optional(),
 
-  // Anthropic (NL parsing, P2P intent extraction)
-  ANTHROPIC_API_KEY: z.string().min(1),
-
-  // CoinGecko (price data with caching)
-  COINGECKO_API_KEY: z.string().min(1),
+  // LLM
+  LLM_API_KEY: z.string().min(1),
+  LLM_MODEL: z.string().default('claude-sonnet-4-6'),
 
   // Postgres
   DATABASE_URL: z.string().min(1),
 
   // Mantle chain config (ERC-8004 NFT + on-chain attestation)
   MANTLE_CHAIN_ID: z.coerce.number().default(5000),
-  ALCHEMY_API_KEY: z.string().min(1),
-  ALCHEMY_MANTLE_RPC: z.string().url(),
+  MANTLE_ALCHEMY_RPC: z.string().url(),
+  SOLANA_HELIUS_RPC: z.string().url().optional(),
+  SOLANA_ALCHEMY_RPC: z.string().url().optional(),
+
+  // byreal-cli (server-side agent wallet)
+  BYREAL_KEYS_DIR: z.string().optional(),
   AUTONOMOUS_RULE_CONTRACT: z.string().optional(),
   ERC8004_NFT_CONTRACT: z.string().optional(),
 
   // Server
-  PORT: z.coerce.number().default(3000),
+  PORT: z.coerce.number().default(8000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 });

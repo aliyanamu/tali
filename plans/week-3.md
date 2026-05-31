@@ -5,7 +5,7 @@ One live autonomous rule firing on Mantle Mainnet, verified contracts, demo vide
 
 ## Done criteria for the week
 - [ ] Contracts deployed + verified on Mantle Mainnet Explorer (mantlescan.xyz)
-- [ ] Rule wired end-to-end: Goldsky webhook → tali-cli rule match → byreal-cli execute → AutonomousRule.sol attest → ERC-8004 NFT event
+- [ ] Rule wired end-to-end: Alchemy webhook → tali-cli rule match → byreal-cli execute → AutonomousRule.sol attest → ERC-8004 NFT event
 - [ ] At least one live rule firing captured (screenshot or video clip)
 - [ ] ERC-8004 NFT minted for Mufidah (tokenId = 1)
 - [ ] Demo video ≥ 2 min: agent setup → net worth → rule fires → on-chain attestation

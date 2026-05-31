@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+cd "$(dirname "$0")/.." && exec node_modules/.bin/tsx --env-file=.env src/cli/index.ts "$@"

@@ -11,8 +11,11 @@ pre-indexed API:
 - **Zapper, DeBank, Zerion** — proprietary in-house indexers; index the whole chain proactively,
   not per-user. Instant because data is already there before any user adds the address.
 
-For Mantle specifically, **Alchemy `alchemy_getAssetTransfers` is already in the stack** and
-covers full transfer history for any address on demand. No self-hosted indexer needed.
+For Mantle specifically, a pre-indexed API is needed for on-demand history display.
+**Alchemy is not currently in use** (pivoted to Goldsky Mirror + public RPC). Candidates to
+evaluate when this feature is built: GoldRush (Covalent), Moralis, or Goldsky's own query layer.
+GoldRush is the leading candidate — single API call returns all token balances + history,
+Mantle mainnet support confirmed, and has an x402 per-request payment model suited for agents.
 
 ## Revised pricing model
 

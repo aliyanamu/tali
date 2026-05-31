@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1779871055152,
-      "tag": "0000_init_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1748512800000,
-      "tag": "0001_replace_telegram_id_with_handle",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1780203423556,
-      "tag": "0002_address_index_varchar64",
+      "when": 1780217378596,
+      "tag": "0000_init",
       "breakpoints": true
     }
   ]

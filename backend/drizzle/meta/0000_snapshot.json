@@ -1,5 +1,5 @@
 {
-  "id": "398f3025-9fbd-4f52-82b7-5212de250297",
+  "id": "d34ada81-6c4d-4e6b-b583-c498227359ee",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -110,6 +110,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {
@@ -208,9 +215,15 @@
           "primaryKey": true,
           "notNull": true
         },
-        "telegram_id": {
-          "name": "telegram_id",
-          "type": "bigint",
+        "linked_user_id": {
+          "name": "linked_user_id",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(256)",
           "primaryKey": false,
           "notNull": true
         },
@@ -221,8 +234,8 @@
           "notNull": true,
           "default": "'en'"
         },
-        "privy_wallet_id": {
-          "name": "privy_wallet_id",
+        "linked_wallet_id": {
+          "name": "linked_wallet_id",
           "type": "varchar(128)",
           "primaryKey": false,
           "notNull": false
@@ -239,17 +252,45 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "users_telegram_id_unique": {
-          "name": "users_telegram_id_unique",
+        "users_linked_user_id_unique": {
+          "name": "users_linked_user_id_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "telegram_id"
+            "linked_user_id"
+          ]
+        },
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        },
+        "users_linked_wallet_id_unique": {
+          "name": "users_linked_wallet_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "linked_wallet_id"
+          ]
+        },
+        "users_wallet_address_unique": {
+          "name": "users_wallet_address_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "wallet_address"
           ]
         }
       },
@@ -275,7 +316,7 @@
         },
         "address": {
           "name": "address",
-          "type": "varchar(42)",
+          "type": "varchar(64)",
           "primaryKey": false,
           "notNull": true
         },
@@ -294,6 +335,13 @@
         },
         "created_at": {
           "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
@@ -324,6 +372,21 @@
             }
           ],
           "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "watched_wallets_address_idx": {
+          "name": "watched_wallets_address_idx",
+          "columns": [
+            {
+              "expression": "address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}

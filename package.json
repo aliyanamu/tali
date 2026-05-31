@@ -14,6 +14,7 @@
     "dev:cli": "echo 'CLI removed in this branch — use feat/openclaw-integration for standalone skill'",
     "db:migrate": "pnpm --filter @tali/backend db:migrate",
     "db:generate": "pnpm --filter @tali/backend db:generate",
+    "db:seed": "pnpm --filter @tali/backend db:seed",
     "db:reset": "pnpm --filter @tali/backend db:reset",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",

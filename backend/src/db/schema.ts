@@ -11,17 +11,20 @@ import {
 } from 'drizzle-orm/pg-core';
 
 /**
- * Users table — one row per OpenClaw skill user.
- * Single-user for MVP; id=1 is the default user.
- * walletAddress is the Tier 2 Privy wallet address (same on all EVM chains).
+ * Users table — one row per authenticated user.
+ * linkedUserId: stable external auth provider ID (e.g. Privy DID).
+ * linkedWalletId: embedded wallet ID from the auth provider.
+ * walletAddress: EVM address of the embedded wallet (same across all EVM chains).
  */
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
-  handle: varchar('handle', { length: 128 }).notNull().unique().default('default'),
+  linkedUserId: varchar('linked_user_id', { length: 128 }).notNull().unique(),
+  email: varchar('email', { length: 256 }).notNull().unique(),
   lang: varchar('lang', { length: 8 }).notNull().default('en'),
-  privyWalletId: varchar('privy_wallet_id', { length: 128 }),
-  walletAddress: varchar('wallet_address', { length: 42 }),
+  linkedWalletId: varchar('linked_wallet_id', { length: 128 }).unique(),
+  walletAddress: varchar('wallet_address', { length: 42 }).unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
 /**
@@ -59,6 +62,7 @@ export const events = pgTable(
     linkId: varchar('link_id', { length: 64 }),
     rawPayload: jsonb('raw_payload'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   },
   (t) => ({
     onchainIdempotency: uniqueIndex('events_onchain_idempotency').on(
@@ -86,6 +90,7 @@ export const watchedWallets = pgTable(
     label: varchar('label', { length: 64 }),
     chainId: integer('chain_id').notNull().default(5000),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   },
   (t) => ({
     userAddress: uniqueIndex('watched_user_chain_address').on(t.userId, t.chainId, t.address),

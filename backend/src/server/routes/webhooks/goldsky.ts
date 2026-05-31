@@ -1,10 +1,9 @@
 import type { Context } from 'hono';
-import { eq, or } from 'drizzle-orm';
 import { timingSafeEqual } from 'crypto';
 import { z } from 'zod';
 import { env } from '../../../lib/env.js';
 import { logger } from '../../../lib/logger.js';
-import { db, schema } from '../../../db/index.js';
+import { ingestTransfer } from '../../../services/transferIngestion.js';
 
 // Parsed once at module load — not on every request.
 const CHAIN_ID = Number(env.MANTLE_CHAIN_ID);
@@ -21,16 +20,6 @@ function verifyGoldskySecret(incoming: string, expected: string): boolean {
   } catch {
     return false;
   }
-}
-
-// Converts a raw uint256 string to a decimal string with up to 8 fractional digits.
-// e.g. rawToDecimalString('1000000', 6) → '1.00000000'
-function rawToDecimalString(rawValue: string, decimals: number): string {
-  const raw = BigInt(rawValue);
-  const divisor = 10n ** BigInt(decimals);
-  const whole = raw / divisor;
-  const remainder = raw % divisor;
-  return `${whole}.${remainder.toString().padStart(decimals, '0').slice(0, 8)}`;
 }
 
 // Goldsky Mirror mantle.erc20_transfers dataset field names.
@@ -55,7 +44,7 @@ const GoldskyPayloadSchema = z.union([
 
 export async function handleGoldskyWebhook(c: Context): Promise<Response> {
   const rawBody = await c.req.text();
-  const secret = c.req.header('goldsky-webhook-secret') ?? '';
+  const secret = c.req.query('secret') ?? '';
 
   if (!verifyGoldskySecret(secret, env.GOLDSKY_WEBHOOK_SECRET)) {
     logger.warn('Goldsky webhook: invalid secret');
@@ -74,66 +63,19 @@ export async function handleGoldskyWebhook(c: Context): Promise<Response> {
     const rows = Array.isArray(parsed) ? parsed : [parsed];
 
     for (const row of rows) {
-      const fromAddress = row.sender.toLowerCase();
-      const toAddress = row.recipient.toLowerCase();
-
-      const matchedWallets = await db
-        .select()
-        .from(schema.watchedWallets)
-        .where(
-          or(
-            eq(schema.watchedWallets.address, fromAddress),
-            eq(schema.watchedWallets.address, toAddress),
-          ),
-        );
-
-      if (matchedWallets.length === 0) {
-        logger.debug({ fromAddress, toAddress }, 'Goldsky webhook: no watched wallet matched');
-        continue;
-      }
-
-      const tokenAddr = row.address?.toLowerCase() ?? null;
-      const asset = tokenAddr
-        ? await db.query.assets.findFirst({
-            where: (a, { and, eq }) => and(eq(a.chainId, CHAIN_ID), eq(a.tokenAddress, tokenAddr)),
-          })
-        : await db.query.assets.findFirst({
-            where: (a, { and, eq, isNull }) => and(eq(a.chainId, CHAIN_ID), isNull(a.tokenAddress)),
-          });
-
-      const decimals = asset?.decimals ?? 18;
-      const amountDecimal = rawToDecimalString(row.amount, decimals);
-      const logIndex = row.log_index ?? 0;
-
-      // Bulk insert one row per matched wallet — onConflictDoNothing handles retries.
-      await db
-        .insert(schema.onchainEvents)
-        .values(
-          matchedWallets.map((wallet) => ({
-            userId: wallet.userId,
-            chainId: CHAIN_ID,
-            txHash: row.transaction_hash,
-            logIndex,
-            blockNumber: BigInt(row.block_number),
-            confirmedAt: new Date(row.block_timestamp * 1000),
-            kind: 'transfer',
-            direction: (wallet.address === toAddress ? 'inflow' : 'outflow') as 'inflow' | 'outflow',
-            assetCode: asset?.code ?? null,
-            amountRaw: row.amount,
-            amountDecimal,
-            tokenAddress: tokenAddr,
-            fromAddress,
-            toAddress,
-            source: 'goldsky_mirror',
-            rawPayload: { ...row },
-          })),
-        )
-        .onConflictDoNothing();
-
-      logger.info(
-        { wallets: matchedWallets.length, txHash: row.transaction_hash, asset: asset?.code },
-        'Recorded Goldsky transfer',
-      );
+      await ingestTransfer({
+        chainId: CHAIN_ID,
+        fromAddress: row.sender.toLowerCase(),
+        toAddress: row.recipient.toLowerCase(),
+        amountRaw: row.amount,
+        tokenAddress: row.address?.toLowerCase() ?? null,
+        txHash: row.transaction_hash,
+        logIndex: row.log_index ?? 0,
+        blockNumber: BigInt(row.block_number),
+        blockTimestamp: row.block_timestamp,
+        source: 'goldsky_mirror',
+        rawPayload: { ...row },
+      });
     }
 
     return c.json({ status: 'ok' });

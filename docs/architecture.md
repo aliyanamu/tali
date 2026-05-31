@@ -21,9 +21,10 @@ graph TD
     end
 
     subgraph Backend
-        GS[Alchemy Webhooks<br/>webhook server · Hono]
+        GS[Goldsky Mirror webhook<br/>Mantle mainnet · Hono]
+        POLL[RPC poll loop<br/>Mantle testnet · viem eth_getLogs]
         PG[(Postgres<br/>unified event ledger)]
-        ALC[Alchemy RPC<br/>Mantle state reads]
+        ALC[Mantle RPC<br/>state reads · balance queries]
     end
 
     subgraph Mantle[Chain · Mantle]
@@ -43,7 +44,9 @@ graph TD
     TALI --> AR
     TALI --> NFT
     GS --> PG
+    POLL --> PG
     GS --> CL
+    POLL --> CL
     ALC --> Mantle
     BYREAL --> DEX
 ```
@@ -60,10 +63,10 @@ Tali spans two chains with a clean division — you never cross the boundary in 
 | **What lives here** | Watched wallets, MNT/USDT balances, `AutonomousRule.sol`, ERC-8004 NFT | Byreal CLMM positions, LP tokens |
 | **Who reads it** | `tali-cli` via any Mantle RPC URL (Alchemy, Chainstack, public, etc.) | `byreal-cli` — internally managed, you don't wire it |
 | **Who writes to it** | Privy wallet (user-signed), `AutonomousRule.sol` | `byreal-cli` keypair (`~/.config/byreal/keys/`) |
-| **Real-time events** | Alchemy Webhooks pushes Transfer events to webhook server | Not needed — byreal-cli polls its own state |
-| **What you need to set up** | A Mantle RPC URL in `MANTLE_RPC` env var | Run `byreal-cli setup` — it handles everything |
+| **Real-time events** | **Mainnet:** Goldsky Mirror webhook pushes ERC-20 Transfer events. **Testnet:** RPC poll loop (`eth_getLogs`, Mantle Sepolia, viem) for local dev — zero per-delivery cost. Both write to the same `onchain_events` table. | Not needed — byreal-cli polls its own state |
+| **What you need to set up** | `MANTLE_ALCHEMY_RPC` (mainnet) + `MANTLE_PUBLIC_RPC` (testnet, optional) | Run `byreal-cli setup` — it handles everything |
 
-> **Scaling note:** Alchemy Webhooks is used for the hackathon (less setup, same Alchemy account). At scale, replace with **Goldsky Mirror** — it's purpose-built for high-volume onchain event streaming, handles re-orgs natively, and supports custom pipeline transforms. The webhook server interface stays the same; only the event source changes.
+> **Why two ingestion paths:** Goldsky Mirror only covers Mantle mainnet. For testnet development, `eth_getLogs` polling against the public Mantle Sepolia RPC is free and needs no external account. QuickNode was ruled out due to per-payload credit cost on testnet iteration. The `source` column in `onchain_events` (`goldsky_mirror` vs `rpc_poll`) distinguishes origin.
 
 **Key rule:** Solana execution is fully encapsulated in `byreal-cli`. Tali's backend never imports a Solana library or holds a Solana RPC URL. If you need Solana state, ask `byreal-cli`.
 
@@ -106,7 +109,7 @@ flowchart LR
     end
 
     subgraph Tali backend
-        GS[Alchemy Webhook]
+        GS[Goldsky webhook / RPC poller]
         MATCH[Rule matcher]
         LOG[Ledger write]
     end
@@ -138,7 +141,7 @@ flowchart LR
 `byreal-cli` is installed on the Tali backend server. When a rule fires, the server spawns it as a child process directly.
 
 ```
-Alchemy Webhook → Rule matcher → Claude planner → ExecutionGateway
+Goldsky webhook / RPC poller → Rule matcher → Claude planner → ExecutionGateway
                                                         ↓
                                               ByreaCliExecutor
                                               execSync('byreal-cli ...')
@@ -157,7 +160,7 @@ Alchemy Webhook → Rule matcher → Claude planner → ExecutionGateway
 When a rule fires, the server sends a push notification to the user's device. The user confirms; their local OpenClaw instance executes `byreal-cli` with **their own Phantom-connected wallet**. The server receives the result via a signed callback and attests on Mantle.
 
 ```
-Alchemy Webhook → Rule matcher → Claude planner → ExecutionGateway
+Goldsky webhook / RPC poller → Rule matcher → Claude planner → ExecutionGateway
                                                         ↓
                                               PushNotificationExecutor   (not built)
                                               → push to user device
@@ -182,8 +185,9 @@ Alchemy Webhook → Rule matcher → Claude planner → ExecutionGateway
 | **Claude (agent brain)** | Reasoning, NL parsing, orchestrating skills | Sign transactions; store secrets |
 | **tali-cli** | Net worth, ledger writes, rule management, Mantle interactions | DeFi execution |
 | **byreal-cli** | DeFi execution on Byreal/Solana — yield, DCA, swaps, positions | Personal finance data |
-| **Alchemy Webhooks** | Real-time Mantle Transfer events → webhook server (hackathon) | On-demand state reads |
-| **Alchemy RPC** | Mantle balance reads, on-demand state | Event watching |
+| **Goldsky Mirror** | Real-time ERC-20 Transfer events → webhook server (Mantle mainnet) | On-demand state reads |
+| **RPC poll loop** | ERC-20 Transfer events via `eth_getLogs` (Mantle Sepolia testnet) | Mainnet event delivery |
+| **Mantle RPC** | Balance reads, on-demand state | Event watching |
 | **Privy** | Mantle wallet keys (split-key, non-custodial) | Make decisions autonomously |
 | **AutonomousRule.sol** | Store rule configs on Mantle, emit attestations | Execute Solana DeFi |
 | **ERC-8004 NFT** | Agent identity, action log, public reputation on Mantle | Hold funds |

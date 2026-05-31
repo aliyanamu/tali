@@ -18,6 +18,9 @@ const EnvSchema = z.object({
   // Mantle chain config (ERC-8004 NFT + on-chain attestation)
   MANTLE_CHAIN_ID: z.coerce.number().default(5000),
   MANTLE_ALCHEMY_RPC: z.string().url(),
+  // Mantle testnet (Sepolia) — when set, starts the RPC poll loop for local dev/testing
+  MANTLE_TESTNET_RPC: z.string().url().optional(),
+  POLL_INTERVAL_MS: z.coerce.number().default(5000),
   SOLANA_HELIUS_RPC: z.string().url().optional(),
   SOLANA_ALCHEMY_RPC: z.string().url().optional(),
 

@@ -110,7 +110,8 @@ plans/
   features/<slug>/
     brainstorm.md                  ← brainstorm output
     plan.md                        ← implementation plan
-    solution.md                    ← /compound output after a feature ships
+docs/
+  solutions/                       ← /compound output after a feature ships
 ```
 
 | Step | Where | Skill |
@@ -119,7 +120,7 @@ plans/
 | plan | `plans/features/<slug>/plan.md` | `/plan` |
 | work | git commits | `/work` |
 | review | PR diff | `/review` |
-| compound | `plans/features/<slug>/solution.md` | `/compound` |
+| compound | `docs/solutions/` | `/compound` |
 
 ## Pre-commit checklist
 

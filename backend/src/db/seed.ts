@@ -49,23 +49,27 @@ await db.update(schema.assets).set({ chainId: 1399811149 }).where(eq(schema.asse
 console.log('Patched asset chainIds');
 
 // ── Step 4: Demo user ──────────────────────────────────────────────────
+// Values read from env so real credentials are never committed.
+// Set these in backend/.env (see .env.example for keys).
+const seedUser = {
+  linkedUserId: process.env.SEED_USER_PRIVY_ID   ?? 'privy_user_placeholder',
+  email:        process.env.SEED_USER_EMAIL       ?? 'demo@example.com',
+  linkedWalletId: process.env.SEED_USER_WALLET_ID ?? 'privy_wallet_placeholder',
+  walletAddress:  (process.env.SEED_USER_WALLET_ADDRESS ?? '0x0000000000000000000000000000000000000001').toLowerCase(),
+  preferredCurrency: 'IDR',
+};
+
 await db
   .insert(schema.users)
-  .values({
-    linkedUserId: 'cmptj8akr00cd0dl1rv7vf7ay',
-    email: 'mufidah.hanaaliyah@gmail.com',
-    linkedWalletId: 'l0frktpc4w0xk2sxtsw9cdbb',
-    walletAddress: '0x8a5b7bbaba77920744bd91643cc0e16a8acff061',
-    preferredCurrency: 'IDR',
-  })
+  .values(seedUser)
   .onConflictDoUpdate({
     target: schema.users.linkedUserId,
     set: {
-      email: 'mufidah.hanaaliyah@gmail.com',
-      walletAddress: '0x8a5b7bbaba77920744bd91643cc0e16a8acff061',
+      email:         seedUser.email,
+      walletAddress: seedUser.walletAddress,
       preferredCurrency: 'IDR',
     },
   });
-console.log('Seeded demo user: mufidah.hanaaliyah@gmail.com');
+console.log(`Seeded demo user: ${seedUser.email}`);
 
 await client.end();

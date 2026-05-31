@@ -14,6 +14,9 @@ sources:
     dataset_name: mantle.erc20_transfers
     version: 1.0.0
     type: dataset
+    # 'latest' means only transfers after pipeline deployment are delivered.
+    # Pre-deployment history is NOT backfilled. Historical balances are still
+    # accurate via tali-cli networth (RPC balance query), just not in onchain_events.
     start_at: latest
 
 transforms: {}

@@ -2,42 +2,60 @@
 
 Date surfaced: 2026-05-31
 
-## Pricing model
+## How competitors read wallet data (research finding)
 
-**Free tier** — on-demand RPC only, nothing persisted
-- Page load / refresh → direct RPC call → current balances → not stored
-- No entry in `watched_wallets` → poller and Goldsky webhook skip them entirely
-- No rows ever written to `onchain_events`
+No major tracker uses raw `eth_getLogs` for history display. They all sit on top of a
+pre-indexed API:
+- **Covalent / GoldRush**, **Moralis** — third-party indexer APIs, full history from block 0
+- **Alchemy Enhanced APIs** (`alchemy_getAssetTransfers`) — layered on Alchemy's own node index
+- **Zapper, DeBank, Zerion** — proprietary in-house indexers; index the whole chain proactively,
+  not per-user. Instant because data is already there before any user adds the address.
 
-**Paid tier** — real-time recording
-- `wallet watch` adds to `watched_wallets`
-- Poller + Goldsky webhook start recording transfers into `onchain_events`
-- Enables: transfer history, net worth over time, alerts, autonomous rule triggers
+For Mantle specifically, **Alchemy `alchemy_getAssetTransfers` is already in the stack** and
+covers full transfer history for any address on demand. No self-hosted indexer needed.
 
-Implementation note: the gate already exists in code — both the poller and webhook
-filter by `watched_wallets`. Removing a user from that table immediately stops recording.
-No new infrastructure needed to enforce the free/paid split.
+## Revised pricing model
 
-### 30-day backfill on upgrade (flagged, not built)
+**Free tier** — read-only, nothing persisted
+- Current balance: RPC on-demand ✅
+- Transfer history: `alchemy_getAssetTransfers` on-demand, not stored in `onchain_events` ✅
+- No `watched_wallets` entry, no recording, no DB writes
 
-Cold-start problem: a user who just upgraded sees an empty ledger for weeks, which
-feels broken. Fix: on `wallet watch`, run a one-shot `eth_getLogs` over the last 30 days
-of blocks (~2.2M blocks on Mantle at ~1.2s/block) feeding into the existing `ingestTransfer`
-service. One RPC call, fast, gives immediate history.
+**Paid tier** — recording + intelligence layer
+- Onchain ↔ offchain reconciliation (pair crypto receive with bank transfer / P2P trade)
+- Real-time rule triggers and alerts
+- Both require events recorded in `onchain_events` — that's the gate, not history display
 
-Implementation hook: `tali-cli wallet watch <address> --backfill` flag.
+`watched_wallets` + `onchain_events` recording infrastructure exists to power reconciliation
+and rules, not to gate history display. Free users read history from Alchemy; paid users get
+reconciliation and rules on top of the stored event stream.
 
 ### Competitive context
 
-| App | Free gate | Free history | Backfill on upgrade |
+| App | Free gate | Free history | Paid unlock |
 |---|---|---|---|
-| [Delta](https://delta.app/en) | 2 wallet connections | Full history on connected wallets | Immediate — add wallet, it backfills |
-| [CoinTracker](https://www.cointracker.io) | 25 transactions | Full backfill on connect (hits cap fast for active wallets) | Already imported, just unlocked on upgrade |
-| **Tali (proposed)** | No watched address recording | Balance only (RPC on-demand) | 30-day backfill on upgrade |
+| [Delta](https://delta.app/en) | 2 wallet connections | Full history (Alchemy/Covalent) | More connections |
+| [CoinTracker](https://www.cointracker.io) | 25 transactions | Full backfill on connect | More transactions + tax reports |
+| [Zapper](https://zapper.xyz) | None | Full history (own indexer) | Premium portfolio features |
+| **Tali (proposed)** | No gate on balance/history | Full history via Alchemy on-demand | Reconciliation + rule triggers |
 
-Delta gates on connection count; CoinTracker gates on transaction count (backfills aggressively
-on connect so active wallets hit the limit instantly — good conversion mechanic). Tali's model
-is closest to Delta but gates on recording depth rather than connection count.
+Tali's moat is the onchain ↔ offchain reconciliation skill — not history display, which every
+tracker gives away free.
+
+### Recording gate implementation
+
+Add `recording_enabled boolean default false` to `watched_wallets`. Poller and Goldsky webhook
+filter on `recording_enabled = true` instead of any watched wallet. Free users can have
+`watched_wallets` rows (for label/display purposes) with recording off; paid users flip the flag.
+No new table needed.
+
+### 30-day backfill on paid upgrade (flagged, not built)
+
+When `recording_enabled` flips to true, run a one-shot `alchemy_getAssetTransfers` over the
+last 30 days feeding into `ingestTransfer`. Gives the reconciliation layer immediate data to
+work with instead of starting from zero.
+
+Implementation hook: `tali-cli wallet watch <address> --record` or automatic on plan upgrade.
 
 ---
 

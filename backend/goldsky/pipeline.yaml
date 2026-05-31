@@ -16,18 +16,12 @@ sources:
     type: dataset
     start_at: latest
 
-transforms:
-  watched_only:
-    primary_key: id
-    sql: >
-      SELECT * FROM mantle_erc20_transfers
-      WHERE sender    IN ('0x8a5b7bbaba77920744bd91643cc0e16a8acff061')
-         OR recipient IN ('0x8a5b7bbaba77920744bd91643cc0e16a8acff061')
+transforms: {}
 
 sinks:
   tali_webhook:
     type: webhook
-    from: watched_only
+    from: mantle_erc20_transfers
     # URL is read from the TALI_WEBHOOK_URL secret stored in Goldsky.
     # To set it:
     #   goldsky secret upsert TALI_WEBHOOK_URL https://your-server.example.com/webhooks/goldsky

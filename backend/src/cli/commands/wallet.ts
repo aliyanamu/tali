@@ -49,10 +49,6 @@ export const walletCommand = new Command('wallet')
         } else {
           console.log(`✓ Saved to DB (chainId: ${chainId}${opts.label ? `, label: ${opts.label}` : ''})`);
           console.log(`\nWatching: ${normalized}`);
-          console.log();
-          console.log(`  Note: Goldsky pipeline watches a static address list baked into`);
-          console.log(`  backend/goldsky/pipeline.yaml. New addresses only receive events`);
-          console.log(`  after the pipeline.yaml is updated and redeployed.`);
         }
       }),
   )

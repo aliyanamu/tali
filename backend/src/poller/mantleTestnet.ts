@@ -1,4 +1,4 @@
-import { createPublicClient, defineChain, http, parseAbiItem, type Transaction } from 'viem';
+import { createPublicClient, defineChain, http, parseAbiItem } from 'viem';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '../db/index.js';
 import { logger } from '../lib/logger.js';
@@ -7,6 +7,8 @@ import { ingestTransfer } from '../services/transferIngestion.js';
 const CHAIN_ID = 5003;
 // ~24s lookback at ~1.2s/block — covers restarts without re-processing large history
 const LOOKBACK_BLOCKS = 20n;
+// Cap per-poll block range to bound RPC calls and memory after a long outage
+const MAX_BLOCKS_PER_POLL = 100n;
 
 const mantleSepolia = defineChain({
   id: CHAIN_ID,
@@ -42,7 +44,10 @@ export function startMantleTestnetPoller(rpcUrl: string, intervalMs: number): ()
       if (lastBlock >= latestBlock) return;
 
       const fromBlock = lastBlock + 1n;
-      const toBlock = latestBlock;
+      // Cap the range so a long RPC outage doesn't cause unbounded getBlock calls
+      const toBlock = latestBlock - fromBlock < MAX_BLOCKS_PER_POLL
+        ? latestBlock
+        : fromBlock + MAX_BLOCKS_PER_POLL - 1n;
 
       const wallets = await db
         .select({ address: schema.watchedWallets.address })
@@ -67,13 +72,19 @@ export function startMantleTestnetPoller(rpcUrl: string, intervalMs: number): ()
       const [fromLogs, toLogs, blocks] = await Promise.all([
         client.getLogs({ event: TRANSFER_ABI, args: { from: watchedAddresses }, fromBlock, toBlock }),
         client.getLogs({ event: TRANSFER_ABI, args: { to: watchedAddresses }, fromBlock, toBlock }),
-        Promise.all(blockRange.map((blockNumber) => client.getBlock({ blockNumber, includeTransactions: true }))),
+        Promise.all(
+          blockRange.map((blockNumber) =>
+            client.getBlock({ blockNumber, includeTransactions: true as const })
+          )
+        ),
       ]);
 
       // Build timestamp map from the fetched blocks
       const blockTimestamps = new Map<bigint, number>();
       for (const block of blocks) {
-        blockTimestamps.set(block.number!, Number(block.timestamp));
+        if (block.number !== null) {
+          blockTimestamps.set(block.number, Number(block.timestamp));
+        }
       }
 
       // Deduplicate ERC-20 logs (from + to queries can overlap)
@@ -87,23 +98,32 @@ export function startMantleTestnetPoller(rpcUrl: string, intervalMs: number): ()
 
       // Find native transfer candidates: value > 0, address matches a watched wallet
       const nativeCandidates = blocks.flatMap((block) =>
-        (block.transactions as Transaction[]).filter(
+        block.transactions.filter(
           (tx) =>
             tx.value > 0n &&
             tx.to !== null &&
-            (watchedSet.has(tx.to!.toLowerCase()) || watchedSet.has(tx.from.toLowerCase())),
+            (watchedSet.has(tx.to.toLowerCase()) || watchedSet.has(tx.from.toLowerCase())),
         ),
       );
 
-      // Fetch receipts for candidates only; filter out failed transactions
-      const successfulNative =
-        nativeCandidates.length > 0
-          ? await Promise.all(
-              nativeCandidates.map((tx) =>
-                client.getTransactionReceipt({ hash: tx.hash }).then((r) => ({ tx, ok: r.status === 'success' })),
-              ),
-            ).then((results) => results.filter((r) => r.ok).map((r) => r.tx))
-          : [];
+      // Fetch receipts for candidates; use allSettled so one flaky call doesn't stall the cycle
+      const receiptResults = await Promise.allSettled(
+        nativeCandidates.map((tx) =>
+          client.getTransactionReceipt({ hash: tx.hash }).then((r) => ({ tx, ok: r.status === 'success' }))
+        )
+      );
+      const successfulNative = receiptResults
+        .filter((r): r is PromiseFulfilledResult<{ tx: (typeof nativeCandidates)[number]; ok: boolean }> =>
+          r.status === 'fulfilled' && r.value.ok
+        )
+        .map((r) => r.value.tx);
+
+      if (receiptResults.some((r) => r.status === 'rejected')) {
+        logger.warn(
+          { failed: receiptResults.filter((r) => r.status === 'rejected').length },
+          'Mantle testnet poller: some receipt fetches failed (will retry on next cycle)',
+        );
+      }
 
       // Ingest ERC-20 transfers
       for (const log of erc20Logs) {
@@ -115,10 +135,12 @@ export function startMantleTestnetPoller(rpcUrl: string, intervalMs: number): ()
           toAddress: log.args.to.toLowerCase(),
           amountRaw: log.args.value.toString(),
           tokenAddress: log.address.toLowerCase(),
-          txHash: log.transactionHash!,
+          txHash: log.transactionHash ?? '',
           logIndex: log.logIndex ?? 0,
-          blockNumber: log.blockNumber!,
-          blockTimestamp: blockTimestamps.get(log.blockNumber!) ?? Math.floor(Date.now() / 1000),
+          blockNumber: log.blockNumber ?? 0n,
+          blockTimestamp: (log.blockNumber !== null && log.blockNumber !== undefined)
+            ? (blockTimestamps.get(log.blockNumber) ?? 0)
+            : 0,
           source: 'rpc_poll',
           rawPayload: {
             blockNumber: log.blockNumber?.toString(),
@@ -140,8 +162,10 @@ export function startMantleTestnetPoller(rpcUrl: string, intervalMs: number): ()
           tokenAddress: null,
           txHash: tx.hash,
           logIndex: -1,
-          blockNumber: tx.blockNumber!,
-          blockTimestamp: blockTimestamps.get(tx.blockNumber!) ?? Math.floor(Date.now() / 1000),
+          blockNumber: tx.blockNumber ?? 0n,
+          blockTimestamp: (tx.blockNumber !== null && tx.blockNumber !== undefined)
+            ? (blockTimestamps.get(tx.blockNumber) ?? 0)
+            : 0,
           source: 'rpc_poll',
           rawPayload: {
             blockNumber: tx.blockNumber?.toString(),

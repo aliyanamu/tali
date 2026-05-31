@@ -22,6 +22,7 @@ export const networks = pgTable('networks', {
   name: varchar('name', { length: 64 }).notNull(),
   rpcUrl: varchar('rpc_url', { length: 256 }).notNull(),
   explorerUrl: varchar('explorer_url', { length: 256 }).notNull(),
+  // No FK to assets.code — circular dependency (assets.chainId → networks). Validated at seed time.
   nativeCurrencyCode: varchar('native_currency_code', { length: 16 }),
   isTestnet: boolean('is_testnet').notNull().default(false),
   isActive: boolean('is_active').notNull().default(true),
@@ -31,7 +32,7 @@ export const networks = pgTable('networks', {
 // Unified registry for both crypto tokens and fiat currencies.
 // coingeckoId: the asset's CoinGecko coin ID (e.g. 'mantle', 'tether') — used as the `ids` param.
 // vsCurrency:  the CoinGecko vs_currency param (e.g. 'idr', 'usd') — used for fiat price quotes.
-// NOTE: numeric columns (amountDecimal, amountFiat, rateAtTime) return string in Drizzle. Use parseFloat().
+// NOTE: numeric columns (amountDecimal) return string in Drizzle. Use parseFloat().
 export const assets = pgTable(
   'assets',
   {
@@ -50,6 +51,10 @@ export const assets = pgTable(
       .on(t.chainId, t.tokenAddress)
       .where(sql`${t.tokenAddress} IS NOT NULL`),
     decimalsCheck: check('assets_decimals_range', sql`${t.decimals} >= 0 AND ${t.decimals} <= 77`),
+    assetTypeCheck: check(
+      'assets_asset_type_check',
+      sql`${t.assetType} IN ('native', 'erc20', 'fiat', 'stablecoin')`,
+    ),
   }),
 );
 
@@ -57,7 +62,8 @@ export const assets = pgTable(
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().$defaultFn(() => uuidv7()),
   linkedUserId: varchar('linked_user_id', { length: 128 }).notNull().unique(),
-  email: varchar('email', { length: 256 }).notNull().unique(),
+  // Nullable: Privy supports wallet-only sign-in with no email
+  email: varchar('email', { length: 256 }).unique(),
   lang: varchar('lang', { length: 8 }).notNull().default('en'),
   linkedWalletId: varchar('linked_wallet_id', { length: 128 }).unique(),
   walletAddress: varchar('wallet_address', { length: 64 }).unique(),
@@ -77,7 +83,7 @@ export const watchedWallets = pgTable(
   'watched_wallets',
   {
     id: uuid('id').primaryKey().$defaultFn(() => uuidv7()),
-    userId: uuid('user_id').notNull().references(() => users.id),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     chainId: integer('chain_id').notNull().references(() => networks.chainId),
     address: varchar('address', { length: 64 }).notNull(),
     label: varchar('label', { length: 64 }),
@@ -97,14 +103,15 @@ export const watchedWallets = pgTable(
 // amountRaw:     lossless source of truth (raw uint256 string from chain)
 // amountDecimal: pre-parsed convenience cache (amountRaw / 10^assets.decimals)
 //                Drizzle returns this as string — callers must parseFloat()
+// logIndex -1:   sentinel for native transfers (no ERC-20 log emitted)
 export const onchainEvents = pgTable(
   'onchain_events',
   {
     id: uuid('id').primaryKey().$defaultFn(() => uuidv7()),
-    userId: uuid('user_id').notNull().references(() => users.id),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     chainId: integer('chain_id').notNull().references(() => networks.chainId),
     txHash: varchar('tx_hash', { length: 66 }).notNull(),
-    logIndex: integer('log_index').notNull().default(0), // -1 sentinel for native transfers (no log emitted)
+    logIndex: integer('log_index').notNull().default(0),
     blockNumber: bigint('block_number', { mode: 'bigint' }),
     confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
     kind: varchar('kind', { length: 32 }),           // open: transfer | swap | bridge | yield | ...
@@ -120,6 +127,8 @@ export const onchainEvents = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
+    // userId is part of the idempotency key because the same tx can appear for both sender and
+    // receiver (different users watching the same wallet). Goldsky retries are handled by onConflictDoNothing.
     onchainIdempotency: uniqueIndex('onchain_events_idempotency').on(t.userId, t.chainId, t.txHash, t.logIndex),
     userCreatedAt: index('onchain_events_user_created_at').on(t.userId, t.createdAt),
     userChainCreatedAt: index('onchain_events_user_chain_created_at').on(t.userId, t.chainId, t.createdAt),
@@ -132,21 +141,19 @@ export const onchainEvents = pgTable(
 );
 
 // ── offchain_entries ──────────────────────────────────────────
-// amountFiat: settled fiat amount — 0 decimal scale because IDR/VND have no minor units.
-//             For currencies with cents (SGD, PHP, THB), store in whole units too (e.g. SGD 15).
+// fiatAmount: human-readable decimal (numeric(20,6) covers all real fiat currencies — max 3 decimals in practice).
 // rateAtTime: exchange rate snapshot at entry time (numeric(24,12) handles tiny micro-cap rates).
+// The crypto side lives in onchain_events; link via event_reconciliations to get both sides.
+// NOTE: numeric columns return string in Drizzle. Use parseFloat().
 export const offchainEntries = pgTable(
   'offchain_entries',
   {
     id: uuid('id').primaryKey().$defaultFn(() => uuidv7()),
-    userId: uuid('user_id').notNull().references(() => users.id),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     kind: varchar('kind', { length: 64 }),            // open: p2p_trade | bank_transfer | ewallet | expense | income | ...
     direction: varchar('direction', { length: 8 }),   // inflow | outflow | neutral
-    amountFiat: numeric('amount_fiat', { precision: 20, scale: 0 }),
+    fiatAmount: numeric('fiat_amount', { precision: 20, scale: 6 }),
     currencyCode: varchar('currency_code', { length: 16 }).references(() => assets.code),
-    rateAtTime: numeric('rate_at_time', { precision: 24, scale: 12 }),
-    assetCode: varchar('asset_code', { length: 16 }).references(() => assets.code),
-    amountDecimal: numeric('amount_decimal', { precision: 20, scale: 8 }),
     note: text('note'),
     occurredAt: timestamp('occurred_at', { withTimezone: true }),
     source: varchar('source', { length: 64 }),
@@ -166,7 +173,6 @@ export const offchainEntries = pgTable(
 // M:N junction linking onchain events to offchain entries.
 // Unlink by soft-deleting (set deletedAt) — both parent rows survive intact.
 // ON DELETE CASCADE: if a parent event is deleted, its reconciliation links auto-clean.
-// Partial unique index ensures only one active reconciliation per (onchain, offchain) pair.
 export const eventReconciliations = pgTable(
   'event_reconciliations',
   {
@@ -180,9 +186,17 @@ export const eventReconciliations = pgTable(
   (t) => ({
     onchainIdx: index('recon_onchain_event_id_idx').on(t.onchainEventId),
     offchainIdx: index('recon_offchain_entry_id_idx').on(t.offchainEntryId),
+    // Full-pair unique: covers (onchain, offchain) rows — handles the most common case
     activePairUnique: uniqueIndex('recon_active_pair_unique')
       .on(t.onchainEventId, t.offchainEntryId)
       .where(sql`${t.deletedAt} IS NULL`),
+    // Half-sided unique indexes: prevent duplicate active reconciliations for NULL-sided rows
+    activeOnchainOnly: uniqueIndex('recon_active_onchain_only')
+      .on(t.onchainEventId)
+      .where(sql`${t.deletedAt} IS NULL AND ${t.offchainEntryId} IS NULL`),
+    activeOffchainOnly: uniqueIndex('recon_active_offchain_only')
+      .on(t.offchainEntryId)
+      .where(sql`${t.deletedAt} IS NULL AND ${t.onchainEventId} IS NULL`),
   }),
 );
 

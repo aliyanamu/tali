@@ -21,7 +21,7 @@ export interface TransferParams {
   blockNumber: bigint;
   blockTimestamp: number; // unix seconds
   source: string;
-  rawPayload: object;
+  rawPayload: Record<string, unknown>;
 }
 
 export async function ingestTransfer(params: TransferParams): Promise<boolean> {
@@ -73,24 +73,33 @@ export async function ingestTransfer(params: TransferParams): Promise<boolean> {
   await db
     .insert(schema.onchainEvents)
     .values(
-      matchedWallets.map((wallet) => ({
-        userId: wallet.userId,
-        chainId,
-        txHash,
-        logIndex,
-        blockNumber,
-        confirmedAt: new Date(blockTimestamp * 1000),
-        kind: 'transfer',
-        direction: (wallet.address === toAddress ? 'inflow' : 'outflow') as 'inflow' | 'outflow',
-        assetCode: asset?.code ?? null,
-        amountRaw,
-        amountDecimal,
-        tokenAddress,
-        fromAddress,
-        toAddress,
-        source,
-        rawPayload,
-      })),
+      matchedWallets.map((wallet) => {
+        const direction: 'inflow' | 'outflow' | 'neutral' =
+          fromAddress === toAddress
+            ? 'neutral'
+            : wallet.address === toAddress
+              ? 'inflow'
+              : 'outflow';
+
+        return {
+          userId: wallet.userId,
+          chainId,
+          txHash,
+          logIndex,
+          blockNumber,
+          confirmedAt: new Date(blockTimestamp * 1000),
+          kind: 'transfer',
+          direction,
+          assetCode: asset?.code ?? null,
+          amountRaw,
+          amountDecimal,
+          tokenAddress,
+          fromAddress,
+          toAddress,
+          source,
+          rawPayload,
+        };
+      }),
     )
     .onConflictDoNothing();
 

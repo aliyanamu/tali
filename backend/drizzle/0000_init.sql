@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS "assets" (
 	"vs_currency" varchar(16),
 	"chain_id" integer,
 	"token_address" varchar(64),
-	CONSTRAINT "assets_decimals_range" CHECK ("assets"."decimals" >= 0 AND "assets"."decimals" <= 77)
+	CONSTRAINT "assets_decimals_range" CHECK ("assets"."decimals" >= 0 AND "assets"."decimals" <= 77),
+	CONSTRAINT "assets_asset_type_check" CHECK ("assets"."asset_type" IN ('native', 'erc20', 'fiat', 'stablecoin'))
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "event_reconciliations" (
@@ -35,11 +36,8 @@ CREATE TABLE IF NOT EXISTS "offchain_entries" (
 	"user_id" uuid NOT NULL,
 	"kind" varchar(64),
 	"direction" varchar(8),
-	"amount_fiat" numeric(20, 0),
+	"fiat_amount" numeric(20, 6),
 	"currency_code" varchar(16),
-	"rate_at_time" numeric(24, 12),
-	"asset_code" varchar(16),
-	"amount_decimal" numeric(20, 8),
 	"note" text,
 	"occurred_at" timestamp with time zone,
 	"source" varchar(64),
@@ -72,7 +70,7 @@ CREATE TABLE IF NOT EXISTS "onchain_events" (
 CREATE TABLE IF NOT EXISTS "users" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"linked_user_id" varchar(128) NOT NULL,
-	"email" varchar(256) NOT NULL,
+	"email" varchar(256),
 	"lang" varchar(8) DEFAULT 'en' NOT NULL,
 	"linked_wallet_id" varchar(128),
 	"wallet_address" varchar(64),
@@ -114,7 +112,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "offchain_entries" ADD CONSTRAINT "offchain_entries_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "offchain_entries" ADD CONSTRAINT "offchain_entries_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -126,13 +124,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "offchain_entries" ADD CONSTRAINT "offchain_entries_asset_code_assets_code_fk" FOREIGN KEY ("asset_code") REFERENCES "public"."assets"("code") ON DELETE no action ON UPDATE no action;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
- ALTER TABLE "onchain_events" ADD CONSTRAINT "onchain_events_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "onchain_events" ADD CONSTRAINT "onchain_events_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -156,7 +148,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "watched_wallets" ADD CONSTRAINT "watched_wallets_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "watched_wallets" ADD CONSTRAINT "watched_wallets_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -171,6 +163,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS "assets_token_address_unique" ON "assets" USIN
 CREATE INDEX IF NOT EXISTS "recon_onchain_event_id_idx" ON "event_reconciliations" USING btree ("onchain_event_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "recon_offchain_entry_id_idx" ON "event_reconciliations" USING btree ("offchain_entry_id");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "recon_active_pair_unique" ON "event_reconciliations" USING btree ("onchain_event_id","offchain_entry_id") WHERE "event_reconciliations"."deleted_at" IS NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "recon_active_onchain_only" ON "event_reconciliations" USING btree ("onchain_event_id") WHERE "event_reconciliations"."deleted_at" IS NULL AND "event_reconciliations"."offchain_entry_id" IS NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "recon_active_offchain_only" ON "event_reconciliations" USING btree ("offchain_entry_id") WHERE "event_reconciliations"."deleted_at" IS NULL AND "event_reconciliations"."onchain_event_id" IS NULL;--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "offchain_entries_user_created_at" ON "offchain_entries" USING btree ("user_id","created_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "offchain_entries_user_occurred_at" ON "offchain_entries" USING btree ("user_id","occurred_at");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "onchain_events_idempotency" ON "onchain_events" USING btree ("user_id","chain_id","tx_hash","log_index");--> statement-breakpoint
@@ -194,7 +188,7 @@ CREATE VIEW "reconciled_pairs" AS
     oe.amount_decimal   AS onchain_amount,
     off.id              AS offchain_id,
     off.kind            AS offchain_kind,
-    off.amount_fiat,
+    off.fiat_amount,
     off.currency_code,
     off.note
   FROM event_reconciliations er

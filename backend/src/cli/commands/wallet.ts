@@ -1,6 +1,5 @@
 import { Command } from 'commander';
-import { eq } from 'drizzle-orm';
-import { env } from '../../lib/env.js';
+import { and, eq } from 'drizzle-orm';
 import { db, schema } from '../../db/index.js';
 import { addWatchAddress, removeWatchAddress } from '../../integrations/goldsky.js';
 
@@ -20,7 +19,7 @@ export const walletCommand = new Command('wallet')
       .description('Add a wallet address to watch (registers locally + Goldsky pipeline)')
       .argument('<address>', 'EVM address to watch (0x...)')
       .option('--label <label>', 'Human-readable label, e.g. "MetaMask main"')
-      .option('--chain-id <chainId>', 'Chain ID (default: MANTLE_CHAIN_ID from env)', String(env.MANTLE_CHAIN_ID))
+      .option('--chain-id <chainId>', 'Chain ID', '5000')
       .option('-o, --output <format>', 'Output format: text | json', 'text')
       .action(async (address: string, opts: { label?: string; chainId: string; output: string }) => {
         const normalized = address.toLowerCase();
@@ -56,9 +55,11 @@ export const walletCommand = new Command('wallet')
     new Command('unwatch')
       .description('Stop watching a wallet address')
       .argument('<address>', 'EVM address to unwatch (0x...)')
+      .option('--chain-id <chainId>', 'Chain ID', '5000')
       .option('-o, --output <format>', 'Output format: text | json', 'text')
-      .action(async (address: string, opts: { output: string }) => {
+      .action(async (address: string, opts: { chainId: string; output: string }) => {
         const normalized = address.toLowerCase();
+        const chainId = Number(opts.chainId);
 
         try {
           await removeWatchAddress(normalized);
@@ -72,12 +73,19 @@ export const walletCommand = new Command('wallet')
           process.exit(1);
         }
 
-        await db.delete(schema.watchedWallets).where(eq(schema.watchedWallets.address, normalized));
+        await db
+          .delete(schema.watchedWallets)
+          .where(
+            and(
+              eq(schema.watchedWallets.address, normalized),
+              eq(schema.watchedWallets.chainId, chainId),
+            ),
+          );
 
         if (opts.output === 'json') {
-          console.log(JSON.stringify({ success: true, address: normalized }));
+          console.log(JSON.stringify({ success: true, address: normalized, chainId }));
         } else {
-          console.log(`✓ Removed ${normalized} from DB`);
+          console.log(`✓ Removed ${normalized} (chainId: ${chainId}) from DB`);
         }
       }),
   )

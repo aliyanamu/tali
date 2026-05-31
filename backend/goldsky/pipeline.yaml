@@ -38,17 +38,21 @@ sinks:
   tali_webhook_erc20:
     type: webhook
     from: mantle_erc20_transfers
-    # URL (with token) is injected at deploy time via envsubst — never hardcoded here.
-    # TALI_WEBHOOK_URL must include the ?secret= query param, e.g.:
-    #   https://xxx.ngrok-free.app/webhooks/goldsky?secret=<GOLDSKY_WEBHOOK_SECRET value>
+    # TALI_WEBHOOK_URL: base URL without query params, e.g. https://xxx.ngrok-free.app/webhooks/goldsky
+    # Secret is injected as a custom header — never in the URL (would appear in server logs).
     # Deploy with:
-    #   TALI_WEBHOOK_URL="https://xxx.ngrok-free.app/webhooks/goldsky?secret=<your-secret>" \
+    #   TALI_WEBHOOK_URL="https://xxx.ngrok-free.app/webhooks/goldsky" \
+    #   GOLDSKY_WEBHOOK_SECRET="<your-secret>" \
     #     envsubst < backend/goldsky/pipeline.yaml | goldsky pipeline apply --path /dev/stdin
     url: ${TALI_WEBHOOK_URL}
+    headers:
+      X-Goldsky-Secret: ${GOLDSKY_WEBHOOK_SECRET}
     one_row_per_request: true
 
   tali_webhook_native:
     type: webhook
     from: native_mnt_transfers
     url: ${TALI_WEBHOOK_URL}
+    headers:
+      X-Goldsky-Secret: ${GOLDSKY_WEBHOOK_SECRET}
     one_row_per_request: true

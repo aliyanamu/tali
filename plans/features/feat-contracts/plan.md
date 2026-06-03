@@ -559,6 +559,71 @@ export const rules = pgTable('rules', {
 
 ---
 
+## ERC-8004 Agent Registration (Pre-Deploy Step)
+
+### Why
+
+`AutonomousRule.sol` stores an `agentId` (uint256) in every rule, linking rules to Tali's verifiable on-chain identity. This `agentId` is the ERC-721 token ID minted when you call `register()` on Mantle's deployed ERC-8004 Identity Registry. Without it, the `agentId` field is just a placeholder and the attestation trail has no verifiable anchor.
+
+**We do not deploy the ERC-8004 contract.** Mantle deployed it on both testnet and mainnet. We call `register()` on their contract.
+
+### Contract addresses
+
+| Network | Chain ID | Identity Registry |
+|---|---|---|
+| Mantle Sepolia testnet | 5003 | `0x8004A818BFB912233c491871b3d84c89A494BD9e` |
+| Mantle mainnet | 5000 | `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` |
+
+### What `register()` takes — the agent card
+
+`register(agentURI)` mints an ERC-721 NFT and stores a URI pointing to a JSON metadata file called an **agent card**. The card describes who Tali is, what it does, and its service endpoints. Format is `registration-v1` per [ERC-8004 spec](https://eips.ethereum.org/EIPS/eip-8004).
+
+Agent card lives at: `agent-card.json` in repo root. Raw URL (branch):
+```
+https://raw.githubusercontent.com/aliyanamu/tali/feat/contracts/agent-card.json
+```
+After merge to main, update to the `main` branch URL and call `setAgentURI()` on the registry to update the pointer.
+
+**Key fields in the agent card:**
+- `type` — must be `"https://eips.ethereum.org/EIPS/eip-8004#registration-v1"`
+- `name` / `description` — Tali's identity
+- `services` — array of `{ name, endpoint }` objects: `"web"` (GitHub) and `"MCP"` (tali-cli + byreal-cli skills)
+- `registrations` — filled in after calling `register()` with the returned `agentId` and registry address
+- `active: true`
+
+### How to register (testnet)
+
+```bash
+# Requires cast (part of Foundry) + agent wallet private key
+cast send 0x8004A818BFB912233c491871b3d84c89A494BD9e \
+  "register(string)(uint256)" \
+  "https://raw.githubusercontent.com/aliyanamu/tali/feat/contracts/agent-card.json" \
+  --rpc-url https://rpc.sepolia.mantle.xyz \
+  --private-key <AGENT_WALLET_PRIVATE_KEY>
+```
+
+The `Registered(agentId, agentURI, owner)` event in the tx receipt contains your `agentId`.
+
+**After registration:**
+1. Update `agent-card.json` → fill `registrations[0].agentId` with the real value → commit + push
+2. Set `AGENT_ERC8004_ID=<agentId>` in `backend/.env`
+3. Call `setAgentURI()` on the registry if the agent card URL changes (e.g. after merging to `main`)
+
+### How to register (mainnet — week 3)
+
+Same flow, different contract address and RPC:
+```bash
+cast send 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432 \
+  "register(string)(uint256)" \
+  "https://raw.githubusercontent.com/aliyanamu/tali/main/agent-card.json" \
+  --rpc-url https://rpc.mantle.xyz \
+  --private-key <AGENT_WALLET_PRIVATE_KEY>
+```
+
+Update `registrations[1].agentId` in agent-card.json and swap `AGENT_ERC8004_ID` in `.env`.
+
+---
+
 ## Dependencies & Risks
 
 | Item | Notes |
@@ -586,6 +651,7 @@ export const rules = pgTable('rules', {
 ## File Checklist
 
 ### New files
+- `agent-card.json` — ERC-8004 agent identity metadata (registration-v1 format)
 - `contracts/src/AutonomousRule.sol`
 - `contracts/test/AutonomousRule.t.sol`
 - `contracts/script/DeployAutonomousRule.s.sol`
@@ -610,12 +676,14 @@ export const rules = pgTable('rules', {
 
 1. Write + compile `AutonomousRule.sol` → `forge build`
 2. Write + run `AutonomousRule.t.sol` → `forge test -vvv`
-3. Write `DeployAutonomousRule.s.sol` → deploy to Sepolia → copy address to env
-4. `forge build` → copy ABI → `backend/abi/AutonomousRule.json`
-5. Add `rules` table to schema → `pnpm db:generate` → rename migration → `pnpm db:migrate`
-6. Write `contracts.ts` helpers → write `chain.ts` WalletClient
-7. Implement `rules.ts` CLI commands
-8. End-to-end test: `tali-cli rules add "..."` → confirm tx on Sepolia explorer
+3. Create `agent-card.json` → push to GitHub → register on Mantle Sepolia via `cast send` → save `agentId`
+4. Set `AGENT_ERC8004_ID=<agentId>` in `.env`
+5. Write `DeployAutonomousRule.s.sol` → deploy to Sepolia → copy address to env
+6. `forge build` → copy ABI → `backend/abi/AutonomousRule.json`
+7. Add `rules` table to schema → migration → `pnpm db:migrate`
+8. Write `contracts.ts` helpers → `chain.ts` WalletClient
+9. Implement `rules.ts` CLI commands
+10. End-to-end test: `tali-cli rules add "..."` → confirm tx on Sepolia explorer
 
 ---
 

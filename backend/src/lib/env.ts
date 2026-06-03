@@ -26,8 +26,20 @@ const EnvSchema = z.object({
 
   // byreal-cli (server-side agent wallet)
   BYREAL_KEYS_DIR: z.string().optional(),
-  AUTONOMOUS_RULE_CONTRACT: z.string().optional(),
-  ERC8004_NFT_CONTRACT: z.string().optional(),
+
+  // On-chain contracts (Mantle)
+  // AUTONOMOUS_RULE_CONTRACT: deployed AutonomousRule.sol address
+  // AGENT_PRIVY_ID:           Privy wallet ID of the agent server wallet (signs setRule + attestExecution)
+  // AGENT_WALLET_ADDRESS:     EVM address of AGENT_PRIVY_ID wallet (used as msg.sender / rule owner for CLI)
+  // ERC8004_NFT_CONTRACT:     reserved — Mantle issues ERC-8004 NFTs; we don't deploy this
+  AUTONOMOUS_RULE_CONTRACT: z.string().regex(/^0x[0-9a-fA-F]{40}$/, 'must be an EVM address').optional(),
+  AGENT_PRIVY_ID:           z.string().optional(),
+  AGENT_WALLET_ADDRESS:     z.string().regex(/^0x[0-9a-fA-F]{40}$/, 'must be an EVM address').optional(),
+  ERC8004_NFT_CONTRACT:     z.string().optional(),
+
+  // Hackathon: agentId is the Mantle-issued ERC-8004 NFT token ID for this agent.
+  // Set to 1 as placeholder; replace with real value after Mantle hackathon registration.
+  AGENT_ERC8004_ID:         z.coerce.bigint().default(1n),
 
   // Server
   PORT: z.coerce.number().default(8000),

@@ -133,7 +133,7 @@ event RuleExecuted(uint256 indexed ruleId, bytes32 executionHash, bytes32 solana
 - **Block time ~1.2s** — `expiry` as unix timestamp (not block number) is correct; block-based expiry would drift
 - **Gas** — Mantle uses MNT for gas; no special precompiles needed for this contract surface
 - **Chain IDs** — testnet 5003, mainnet 5000; Foundry scripts should use `--chain-id` flag
-- **Verification** — `forge verify-contract` targets `https://explorer.sepolia.mantle.xyz` (testnet) and `https://mantlescan.xyz` (mainnet)
+- **Verification** — `forge verify-contract` targets `https://sepolia.mantlescan.xyz` (testnet) and `https://mantlescan.xyz` (mainnet)
 - **solc 0.8.20** — already set in `contracts/foundry.toml`; compatible with all interfaces above
 
 ---

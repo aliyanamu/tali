@@ -375,7 +375,7 @@ forge script script/DeployAutonomousRule.s.sol \
   --broadcast \
   --verify \
   --verifier blockscout \
-  --verifier-url https://explorer.sepolia.mantle.xyz/api
+  --verifier-url https://sepolia.mantlescan.xyz/api
 ```
 
 **After deploy:** Copy the deployed address into `backend/.env`:
@@ -534,7 +534,7 @@ export const rules = pgTable('rules', {
 ### Functional
 
 - [ ] `forge test -vvv` passes all 10 test cases with 0 failures
-- [ ] `DeployAutonomousRule.s.sol` deploys successfully to Mantle Sepolia; address logged and verifiable on `https://explorer.sepolia.mantle.xyz`
+- [ ] `DeployAutonomousRule.s.sol` deploys successfully to Mantle Sepolia; address logged and verifiable on `https://sepolia.mantlescan.xyz`
 - [ ] Contract source verified on Mantle Sepolia explorer
 - [ ] `tali-cli rules add "when USDT comes in, farm 10% yield"` → prints parsed rule, prompts confirm, sends tx, prints ruleId + tx hash
 - [ ] `tali-cli rules list` → shows active rules with nlText and executionCount

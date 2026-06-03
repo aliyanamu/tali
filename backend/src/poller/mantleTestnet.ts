@@ -16,7 +16,7 @@ const mantleSepolia = defineChain({
   nativeCurrency: { name: 'MNT', symbol: 'MNT', decimals: 18 },
   rpcUrls: { default: { http: ['https://rpc.sepolia.mantle.xyz'] } },
   blockExplorers: {
-    default: { name: 'Mantle Testnet Explorer', url: 'https://explorer.sepolia.mantle.xyz' },
+    default: { name: 'Mantle Testnet Explorer', url: 'https://sepolia.mantlescan.xyz' },
   },
   testnet: true,
 });

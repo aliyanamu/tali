@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, schema } from '../db/index.js';
 import { logger } from '../lib/logger.js';
 import { ingestTransfer } from '../services/transferIngestion.js';
+import { matchAndExecuteRules } from '../services/ruleExecutor.js';
 
 const CHAIN_ID = 5003;
 // ~24s lookback at ~1.2s/block — covers restarts without re-processing large history
@@ -129,7 +130,11 @@ export function startMantleTestnetPoller(rpcUrl: string, intervalMs: number): ()
       for (const log of erc20Logs) {
         if (!log.args.from || !log.args.to || log.args.value === undefined) continue;
 
-        await ingestTransfer({
+        const blockTimestamp = (log.blockNumber !== null && log.blockNumber !== undefined)
+          ? (blockTimestamps.get(log.blockNumber) ?? 0)
+          : 0;
+
+        const { wasNew, matchedWallets } = await ingestTransfer({
           chainId: CHAIN_ID,
           fromAddress: log.args.from.toLowerCase(),
           toAddress: log.args.to.toLowerCase(),
@@ -138,9 +143,7 @@ export function startMantleTestnetPoller(rpcUrl: string, intervalMs: number): ()
           txHash: log.transactionHash ?? '',
           logIndex: log.logIndex ?? 0,
           blockNumber: log.blockNumber ?? 0n,
-          blockTimestamp: (log.blockNumber !== null && log.blockNumber !== undefined)
-            ? (blockTimestamps.get(log.blockNumber) ?? 0)
-            : 0,
+          blockTimestamp,
           source: 'rpc_poll',
           rawPayload: {
             blockNumber: log.blockNumber?.toString(),
@@ -150,11 +153,29 @@ export function startMantleTestnetPoller(rpcUrl: string, intervalMs: number): ()
             args: { from: log.args.from, to: log.args.to, value: log.args.value.toString() },
           },
         });
+
+        if (wasNew) {
+          matchAndExecuteRules({
+            chainId:        CHAIN_ID,
+            txHash:         log.transactionHash ?? '',
+            fromAddress:    log.args.from.toLowerCase(),
+            toAddress:      log.args.to.toLowerCase(),
+            tokenAddress:   log.address.toLowerCase(),
+            amountRaw:      log.args.value.toString(),
+            blockTimestamp,
+          }, matchedWallets).catch((err: unknown) =>
+            logger.error({ err, txHash: log.transactionHash }, 'matchAndExecuteRules error (erc20)')
+          );
+        }
       }
 
       // Ingest native MNT transfers. logIndex -1 is a sentinel (no log event emitted for native transfers).
       for (const tx of successfulNative) {
-        await ingestTransfer({
+        const blockTimestamp = (tx.blockNumber !== null && tx.blockNumber !== undefined)
+          ? (blockTimestamps.get(tx.blockNumber) ?? 0)
+          : 0;
+
+        const { wasNew, matchedWallets } = await ingestTransfer({
           chainId: CHAIN_ID,
           fromAddress: tx.from.toLowerCase(),
           toAddress: tx.to!.toLowerCase(),
@@ -163,9 +184,7 @@ export function startMantleTestnetPoller(rpcUrl: string, intervalMs: number): ()
           txHash: tx.hash,
           logIndex: -1,
           blockNumber: tx.blockNumber ?? 0n,
-          blockTimestamp: (tx.blockNumber !== null && tx.blockNumber !== undefined)
-            ? (blockTimestamps.get(tx.blockNumber) ?? 0)
-            : 0,
+          blockTimestamp,
           source: 'rpc_poll',
           rawPayload: {
             blockNumber: tx.blockNumber?.toString(),
@@ -176,6 +195,20 @@ export function startMantleTestnetPoller(rpcUrl: string, intervalMs: number): ()
             value: tx.value.toString(),
           },
         });
+
+        if (wasNew) {
+          matchAndExecuteRules({
+            chainId:        CHAIN_ID,
+            txHash:         tx.hash,
+            fromAddress:    tx.from.toLowerCase(),
+            toAddress:      tx.to!.toLowerCase(),
+            tokenAddress:   null,
+            amountRaw:      tx.value.toString(),
+            blockTimestamp,
+          }, matchedWallets).catch((err: unknown) =>
+            logger.error({ err, txHash: tx.hash }, 'matchAndExecuteRules error (native)')
+          );
+        }
       }
 
       if (erc20Logs.length > 0 || successfulNative.length > 0) {

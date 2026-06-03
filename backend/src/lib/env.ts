@@ -26,6 +26,12 @@ const EnvSchema = z.object({
 
   // byreal-cli (server-side agent wallet)
   BYREAL_KEYS_DIR: z.string().optional(),
+  // Rule execution targets — byreal-cli Solana execution config
+  // FARM: position PDA to copy (from: byreal-cli positions top-positions --pool <X>)
+  BYREAL_DEFAULT_COPY_POSITION: z.string().optional(),
+  // SWAP: Solana token mints (defaults: USDC → SOL)
+  BYREAL_SWAP_INPUT_MINT:       z.string().optional(),
+  BYREAL_SWAP_OUTPUT_MINT:      z.string().optional(),
 
   // On-chain contracts (Mantle)
   // AUTONOMOUS_RULE_CONTRACT: deployed AutonomousRule.sol address

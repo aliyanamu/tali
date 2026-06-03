@@ -31,11 +31,10 @@
   "supportedTrust": ["reputation"],
   "registrations": [
     {
-      "agentId": null,
+      "agentId": 114,
       "agentRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
       "network": "Mantle Sepolia Testnet",
-      "chainId": 5003,
-      "note": "Update agentId after calling register() — see docs/register-agent.md"
+      "chainId": 5003
     },
     {
       "agentId": null,

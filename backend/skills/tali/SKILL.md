@@ -55,9 +55,9 @@ which byreal-cli && byreal-cli --version
 | `wallet unwatch <address>` | Stop watching a wallet address | ✓ Live |
 | `wallet list` | List all watched wallets | ✓ Live |
 | `log` | Log a P2P trade or manual transaction | ⏳ Week 2 |
-| `rules list` | List active autonomous rules | ⏳ Week 2 |
-| `rules add <rule>` | Add a rule in natural language | ⏳ Week 2 |
-| `rules remove <id>` | Remove a rule by ID | ⏳ Week 2 |
+| `rules list` | List active autonomous rules | ✓ Live |
+| `rules add <rule>` | Add a rule in natural language | ✓ Live |
+| `rules remove <id>` | Remove a rule by ID | ✓ Live |
 | `skill` | Print full skill documentation | ✓ Live |
 
 ## What Tali Records Automatically

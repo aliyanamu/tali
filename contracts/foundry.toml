@@ -4,3 +4,7 @@ out = "out"
 libs = ["lib"]
 solc_version = "0.8.20"
 fs_permissions = [{ access = "read", path = "script/tokens.json" }]
+
+[rpc_endpoints]
+mantle_sepolia = "https://rpc.sepolia.mantle.xyz"
+mantle_mainnet = "https://rpc.mantle.xyz"

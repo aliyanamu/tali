@@ -26,8 +26,22 @@ const EnvSchema = z.object({
 
   // byreal-cli (server-side agent wallet)
   BYREAL_KEYS_DIR: z.string().optional(),
-  AUTONOMOUS_RULE_CONTRACT: z.string().optional(),
-  ERC8004_NFT_CONTRACT: z.string().optional(),
+
+  // On-chain contracts (Mantle)
+  // AUTONOMOUS_RULE_CONTRACT: deployed AutonomousRule.sol address
+  // AGENT_PRIVATE_KEY:        private key of the agent server wallet (signs setRule + attestExecution)
+  //                           Generate with: cast wallet new
+  //                           Never commit. Production: rotate to hardware wallet or Privy server wallet.
+  // AGENT_WALLET_ADDRESS:     EVM address derived from AGENT_PRIVATE_KEY (set both after cast wallet new)
+  // ERC8004_NFT_CONTRACT:     reserved — Mantle issues ERC-8004 NFTs; we don't deploy this
+  AUTONOMOUS_RULE_CONTRACT: z.string().regex(/^0x[0-9a-fA-F]{40}$/, 'must be an EVM address').optional(),
+  AGENT_PRIVATE_KEY:        z.string().regex(/^0x[0-9a-fA-F]{64}$/, 'must be a 0x-prefixed 32-byte hex key').optional(),
+  AGENT_WALLET_ADDRESS:     z.string().regex(/^0x[0-9a-fA-F]{40}$/, 'must be an EVM address').optional(),
+  ERC8004_NFT_CONTRACT:     z.string().optional(),
+
+  // Hackathon: agentId is the Mantle-issued ERC-8004 NFT token ID for this agent.
+  // Set to 1 as placeholder; replace with real value after Mantle hackathon registration.
+  AGENT_ERC8004_ID:         z.coerce.bigint().default(1n),
 
   // Server
   PORT: z.coerce.number().default(8000),

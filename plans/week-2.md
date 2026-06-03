@@ -4,10 +4,10 @@
 Contracts deployed on Mantle Sepolia. Rule setup flow wired end-to-end. Web dashboard scaffold live.
 
 ## Done criteria for the week
-- [ ] `AutonomousRule.sol` written, tested, deployed to Mantle Sepolia
-- [ ] ERC-8004 NFT contract written, tested, deployed to Mantle Sepolia
-- [ ] Rule setup flow: NL → confirmation → Privy signature → `setRule()` → NFT mint
-- [ ] Alchemy webhook → rule match → `byreal-cli` execution → attestation event
+- [x] `AutonomousRule.sol` written, tested, deployed + verified on Mantle Sepolia
+- [x] ERC-8004 agent identity — registered (agentId=114 on Mantle Sepolia); Mantle issues NFT, we don't deploy the contract
+- [x] Rule setup flow: NL → LLM parse → confirmation → `setRule()` via viem WalletClient
+- [ ] Onchain trigger → rule match → `byreal-cli` execution → `attestExecution()` on Mantle
 - [ ] Web dashboard on Vercel — Privy auth, net-worth screen, activity feed
 - [ ] Bank CSV/screenshot import (Claude OCR, bulk insert) — _if time allows_
 
@@ -15,9 +15,9 @@ Contracts deployed on Mantle Sepolia. Rule setup flow wired end-to-end. Web dash
 
 | Slug | Status | Notes |
 |---|---|---|
-| [autonomous-rule-contract](features/autonomous-rule-contract.md) | 🔲 not started | AutonomousRule.sol + Foundry tests on Mantle |
-| [erc8004-nft](features/erc8004-nft.md) | 🔲 not started | Agent identity NFT on Mantle |
-| [rule-setup-flow](features/rule-setup-flow.md) | 🔲 not started | End-to-end `rules add` → contract |
-| [rule-execution](features/rule-execution.md) | 🔲 not started | Alchemy event → byreal-cli execute → attest |
+| autonomous-rule-contract | ✅ done | AutonomousRule.sol deployed + verified Mantle Sepolia `0x7f958B95...` |
+| erc8004-nft | ✅ done (differently) | Mantle's registry; registered as agent #114 via `cast send` |
+| rule-setup-flow | ✅ done | `tali-cli rules add/list/remove` → on-chain via viem WalletClient |
+| [rule-execution](features/rule-execution.md) | 🔲 not started | Onchain event → rule match → byreal-cli → attestExecution() |
 | [web-dashboard](features/web-dashboard.md) | 🔲 not started | Next.js + Privy, Vercel deploy |
 | [bank-import](features/bank-import.md) | 🔲 not started | CSV + screenshot OCR via Claude — if time allows |

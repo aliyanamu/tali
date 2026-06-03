@@ -99,6 +99,32 @@ export const watchedWallets = pgTable(
   }),
 );
 
+// ── rules ─────────────────────────────────────────────────────
+// contractRuleId: the uint256 ruleId returned by AutonomousRule.setRule() on Mantle
+// agentId:        the Mantle-issued ERC-8004 NFT token ID stored in the contract rule
+// triggerHash / actionHash: keccak256 anchors matching the on-chain struct — full params in nlText
+// contractAddress: AUTONOMOUS_RULE_CONTRACT address the rule was set on (for multi-deploy safety)
+export const rules = pgTable(
+  'rules',
+  {
+    id:              uuid('id').primaryKey().$defaultFn(() => uuidv7()),
+    userId:          uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    contractRuleId:  bigint('contract_rule_id', { mode: 'bigint' }).notNull(),
+    agentId:         bigint('agent_id', { mode: 'bigint' }).notNull(),
+    nlText:          text('nl_text').notNull(),
+    triggerHash:     varchar('trigger_hash', { length: 66 }).notNull(),
+    actionHash:      varchar('action_hash', { length: 66 }).notNull(),
+    contractAddress: varchar('contract_address', { length: 42 }).notNull(),
+    active:          boolean('active').notNull().default(true),
+    createdAt:       timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt:       timestamp('expires_at', { withTimezone: true }), // null = never expires
+  },
+  (t) => ({
+    uniqueContractRule: uniqueIndex('rules_contract_rule_idx').on(t.contractAddress, t.contractRuleId),
+    userActiveIdx:      index('rules_user_active_idx').on(t.userId, t.active),
+  }),
+);
+
 // ── onchain_events ────────────────────────────────────────────
 // amountRaw:     lossless source of truth (raw uint256 string from chain)
 // amountDecimal: pre-parsed convenience cache (amountRaw / 10^assets.decimals)
@@ -215,3 +241,5 @@ export type OffchainEntry = typeof offchainEntries.$inferSelect;
 export type NewOffchainEntry = typeof offchainEntries.$inferInsert;
 export type EventReconciliation = typeof eventReconciliations.$inferSelect;
 export type NewEventReconciliation = typeof eventReconciliations.$inferInsert;
+export type Rule = typeof rules.$inferSelect;
+export type NewRule = typeof rules.$inferInsert;

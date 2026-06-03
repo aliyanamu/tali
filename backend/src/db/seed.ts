@@ -36,7 +36,7 @@ await db
   .insert(schema.networks)
   .values([
     { chainId: 5000,       name: 'Mantle Mainnet', rpcUrl: 'https://rpc.mantle.xyz',              explorerUrl: 'https://explorer.mantle.xyz',         nativeCurrencyCode: 'MNT', isTestnet: false, isActive: true  },
-    { chainId: 5003,       name: 'Mantle Sepolia', rpcUrl: 'https://rpc.sepolia.mantle.xyz',       explorerUrl: 'https://explorer.sepolia.mantle.xyz', nativeCurrencyCode: 'MNT', isTestnet: true,  isActive: true  },
+    { chainId: 5003,       name: 'Mantle Sepolia', rpcUrl: 'https://rpc.sepolia.mantle.xyz',       explorerUrl: 'https://sepolia.mantlescan.xyz', nativeCurrencyCode: 'MNT', isTestnet: true,  isActive: true  },
     { chainId: 1399811149, name: 'Solana Mainnet', rpcUrl: 'https://api.mainnet-beta.solana.com',  explorerUrl: 'https://solscan.io',                  nativeCurrencyCode: 'SOL', isTestnet: false, isActive: true  },
     { chainId: 1399811150, name: 'Solana Devnet',  rpcUrl: 'https://api.devnet.solana.com',        explorerUrl: 'https://solscan.io/?cluster=devnet',  nativeCurrencyCode: 'SOL', isTestnet: true,  isActive: false },
   ])

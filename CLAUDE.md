@@ -23,12 +23,12 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 
 ## Repo layout
 
-- `backend/` — all backend TypeScript: Alchemy webhook server + tali-cli + Drizzle ORM
+- `backend/` — all backend TypeScript: Goldsky webhook handler + Mantle testnet RPC poller + tali-cli + Drizzle ORM
   - `backend/src/cli/` — `tali-cli` OpenClaw skill: `networth`, `log`, `rules`, `wallet`
   - `backend/src/server/` — Hono app: HMAC-verified webhook handler + API route stubs
     - `app.ts` — Hono app factory + route mounting
     - `middleware/hmac.ts` — shared HMAC-SHA256 verification
-    - `routes/webhooks/alchemy.ts` — POST /webhooks/alchemy (Alchemy Notify)
+    - `routes/webhooks/goldsky.ts` — POST /webhooks/goldsky (Goldsky Mirror, mainnet)
     - `routes/api/` — REST API stubs for week-2 frontend
   - `backend/src/db/schema.ts` — unified event ledger schema (`users`, `events`, `watchedWallets`)
   - `backend/src/lib/` — chain (viem/Mantle), prices (CoinGecko/IDR), tokens, env, logger
@@ -55,13 +55,13 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 - **Two-skill model:** `tali-cli` (personal finance) + `byreal-cli` (DeFi execution). Claude orchestrates both.
 - **Two-tier wallet:** watched (read-only, Mantle/Solana) / Tali wallet (Privy, user-signed).
 - **Mantle** for wallet balances and IDR net worth. **Solana** for DeFi execution via `byreal-cli`.
-- **Alchemy Notify** pushes real-time onchain Transfer events to Tali's webhook server. No polling.
+- **Event ingestion — dual path:** testnet uses an RPC self-poller (`eth_getLogs`, Mantle Sepolia, viem); mainnet uses Goldsky Mirror webhook push. Both write to the same `events` table with a `source` column distinguishing origin.
 
 ## What Tali does now
 
 - `tali-cli networth --wallet <address>` — live Mantle balances + IDR total
 - `byreal-cli` — DeFi execution on Byreal/Solana
-- Alchemy webhook server — real-time onchain Transfer event ingestion
+- RPC self-poller (testnet) + Goldsky webhook handler (mainnet) — real-time onchain Transfer event ingestion
 
 ## Track positioning
 
@@ -75,7 +75,7 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 2. **Don't suggest features beyond what's built** unless explicitly asked.
 3. **Never write to watched wallets.** MetaMask/Phantom are Tier 1, read-only.
 4. **Solana DeFi execution goes through `byreal-cli` only.**
-5. **Real-time event delivery is via Alchemy Notify webhooks, NOT polling.**
+5. **Event delivery is dual-path: RPC self-poller on testnet, Goldsky Mirror webhook on mainnet.** Never add a third path without updating both.
 6. **Wallets are non-custodial.** Privy split-key. We never hold keys.
 
 ## Running locally
@@ -91,12 +91,14 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 
 `PRIVY_APP_ID`, `PRIVY_APP_SECRET`, `ALCHEMY_API_KEY`, `ALCHEMY_MANTLE_RPC`, `GOLDSKY_WEBHOOK_SECRET`, `ANTHROPIC_API_KEY`, `COINGECKO_API_KEY`, `DATABASE_URL`
 
-## Current build state (as of 2026-05-29)
+## Current build state (as of 2026-06-04)
 
 - `tali-cli networth` — functional; queries Mantle balances + IDR total
 - `tali-cli log` / `rules` / `wallet` — stubs
-- Goldsky webhook server — HMAC-verified, writes events to unified ledger
+- Mantle testnet RPC self-poller — live, writes events to unified ledger
+- Goldsky webhook handler — HMAC-verified, writes events to unified ledger (mainnet path)
 - DB schema — `users`, `events`, `watchedWallets`; migrations generated
+- Week 1 complete. Week 2 in progress.
 
 ## Plans folder — compound-engineering cycle
 

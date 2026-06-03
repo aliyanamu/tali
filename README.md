@@ -16,7 +16,7 @@ No single tool shows an Indonesian crypto-native user their complete financial p
 Tali: unified IDR net worth across Mantle wallets — one number, real value.
 
 ### 2. Autonomous agency
-Set a rule: *"whenever USDT comes into my wallet, farm 10% yield on Byreal."* Tali watches your wallet via Goldsky webhooks, executes on Byreal/Solana when triggered, and attests each action under its own on-chain identity (ERC-8004 NFT on Mantle). Every autonomous action is signed, verifiable, and permanent.
+Set a rule: *"whenever USDT comes into my wallet, farm 10% yield on Byreal."* Tali watches your wallet (RPC self-poller on testnet, Goldsky Mirror webhook on mainnet), executes on Byreal/Solana when triggered, and attests each action under its own on-chain identity (ERC-8004 NFT on Mantle). Every autonomous action is signed, verifiable, and permanent.
 
 ### 3. Real DeFi execution
 `byreal-cli` runs production Byreal CLMM strategies. Not a demo — real yield, real positions, real transactions on Solana.
@@ -35,7 +35,7 @@ graph LR
 ### Built — week 1
 - `tali-cli networth` — live Mantle balances + IDR total via CoinGecko
 - `tali-cli` OpenClaw skill manifest (`backend/skills/tali/SKILL.md`)
-- Goldsky HMAC-verified webhook server — real-time onchain event ingestion
+- Mantle Sepolia RPC self-poller (testnet) + Goldsky HMAC-verified webhook handler (mainnet) — real-time onchain event ingestion
 - Unified event ledger schema (`users`, `events`, `watchedWallets`) via Drizzle ORM
 - Privy server SDK: Mantle wallet creation
 
@@ -78,19 +78,20 @@ byreal-cli swap execute --input-mint <MINT> --output-mint <MINT> --amount 1 --dr
 ```bash
 cp backend/.env.example backend/.env   # fill in keys
 pnpm db:migrate
-pnpm dev:backend                        # Alchemy webhook server on :3000
+pnpm dev:backend                        # Hono server on :8000 (Goldsky webhook handler + RPC poller)
 ```
 
 ## Required env vars
 
-See `backend/.env.example`: `MANTLE_ALCHEMY_RPC`, `SOLANA_HELIUS_RPC`, `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`, `DATABASE_URL`, `PRIVY_APP_ID`, `PRIVY_APP_SECRET`, `ALCHEMY_WEBHOOK_SECRET`, `COINGECKO_API_KEY` (optional)
+See `backend/.env.example`: `MANTLE_ALCHEMY_RPC`, `MANTLE_TESTNET_RPC`, `SOLANA_HELIUS_RPC`, `LLM_API_KEY`, `LLM_MODEL`, `DATABASE_URL`, `PRIVY_APP_ID`, `PRIVY_APP_SECRET`, `GOLDSKY_WEBHOOK_SECRET`, `COINGECKO_API_KEY` (optional)
 
 ## Stack
 
 - **tali-cli** — TypeScript, Commander, viem, Drizzle ORM
 - **byreal-cli** — `@byreal-io/byreal-cli`, Byreal CLMM DEX on Solana
-- **Alchemy Webhooks** — push-based real-time Mantle event delivery
-- **Alchemy / Helius** — Mantle RPC + Solana RPC
+- **Goldsky Mirror** — push-based real-time Mantle event delivery (mainnet)
+- **RPC self-poller** — `eth_getLogs` poll loop against Mantle Sepolia (testnet / local dev)
+- **Alchemy / Helius** — Mantle RPC + Solana RPC (state reads)
 - **Privy** — non-custodial Mantle wallet
 - **Anthropic Claude** — agent brain (NL parsing, orchestration)
 - **Postgres** — unified event ledger

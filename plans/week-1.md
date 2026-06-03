@@ -30,8 +30,8 @@ Mufidah can run `tali-cli networth` and see her IDR net worth, and a `byreal-cli
 - [x] ✅ `tali-cli` available globally via `pnpm link --global` (dev wrapper using local tsx)
 - [x] ✅ `tali-cli skill` — SKILL.md registration ready; smoke-tested live
 - [x] ✅ Token addresses in `tokens.ts` verified — USDC/USDT match Forge broadcast (Mantle Sepolia chain 5003)
-- [ ] 🔲 Alchemy Webhook configured (Transfer events on Mantle for user wallet) — do after webhook server + wallet address are ready
-- [ ] 🔲 Alchemy webhook server receiving real events end-to-end
+- [~] ~~Alchemy Webhook configured~~ N/A: testnet uses RPC self-poller; Goldsky Mirror webhook handles mainnet
+- [x] ✅ Mantle testnet RPC self-poller receiving real events end-to-end (`poller/mantleTestnet.ts`)
 
 ## Features
 
@@ -39,4 +39,4 @@ Mufidah can run `tali-cli networth` and see her IDR net worth, and a `byreal-cli
 |---|---|---|
 | tali-cli | ✅ done | `networth` tested live; `log`/`rules`/`wallet` stubs |
 | byreal-cli setup | ✅ done | wallet configured, skill installed, pools list live |
-| alchemy-webhook | 🔲 not started | Alchemy Webhook for Mantle Transfer events (replaces Goldsky for hackathon) |
+| event-ingestion | ✅ done | RPC self-poller (testnet, `poller/mantleTestnet.ts`) + Goldsky webhook handler (mainnet, `routes/webhooks/goldsky.ts`) — both write to `events` table |

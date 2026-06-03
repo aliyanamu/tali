@@ -20,7 +20,7 @@ import {
 const ParsedRuleSchema = z.object({
   tokenSymbol:    z.enum(['USDT', 'USDC', 'MNT', 'mETH', 'USDY']).describe('Token to watch'),
   direction:      z.enum(['IN', 'OUT', 'BOTH']).describe('Transfer direction relative to watched wallet'),
-  thresholdRaw:   z.string().describe('Minimum amount in raw token units (0 = any amount)'),
+  thresholdRaw:   z.string().regex(/^\d+$/, 'must be a non-negative integer string').describe('Minimum amount in raw token units (0 = any amount)'),
   actionType:     z.enum(['FARM', 'SWAP', 'DCA']).describe('DeFi action to execute'),
   targetPct:      z.number().int().min(1).max(100).describe('Percentage of incoming amount to act on'),
   maxSlippageBps: z.number().int().min(0).max(1000).default(50).describe('Max slippage in basis points (50 = 0.5%)'),
@@ -82,13 +82,16 @@ export const rulesCommand = new Command('rules')
       .description('List active rules')
       .option('-o, --output <format>', 'Output format: table | json', 'table')
       .action(async (opts: { output: string }) => {
-        const agentWallet = env.AGENT_WALLET_ADDRESS as `0x${string}` | undefined;
-
-        // For now, list all active rules (single-user hackathon — no userId auth in CLI)
+        // Filter by active contract address so testnet and mainnet rules don't mix
+        const contractAddress = env.AUTONOMOUS_RULE_CONTRACT;
         const rows = await db
           .select()
           .from(schema.rules)
-          .where(eq(schema.rules.active, true))
+          .where(
+            contractAddress
+              ? and(eq(schema.rules.active, true), eq(schema.rules.contractAddress, contractAddress))
+              : eq(schema.rules.active, true),
+          )
           .orderBy(schema.rules.createdAt);
 
         if (opts.output === 'json') {
@@ -120,6 +123,10 @@ export const rulesCommand = new Command('rules')
       .option('-o, --output <format>', 'Output format: table | json', 'table')
       .option('-y, --yes', 'Skip confirmation prompt')
       .action(async (nlText: string, opts: { output: string; yes?: boolean }) => {
+        if (nlText.length > 500) {
+          console.error('Rule description too long (max 500 characters).');
+          process.exit(1);
+        }
         if (!env.AUTONOMOUS_RULE_CONTRACT) {
           console.error('AUTONOMOUS_RULE_CONTRACT not set. Deploy the contract first and set it in .env');
           process.exit(1);
@@ -235,6 +242,10 @@ export const rulesCommand = new Command('rules')
           process.exit(1);
         }
 
+        if (!/^\d+$/.test(contractRuleIdStr)) {
+          console.error(`Invalid rule ID: "${contractRuleIdStr}". Must be a positive integer (from rules list).`);
+          process.exit(1);
+        }
         const contractRuleId = BigInt(contractRuleIdStr);
 
         // Look up rule in DB

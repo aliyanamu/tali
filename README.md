@@ -39,10 +39,15 @@ graph LR
 - Unified event ledger schema (`users`, `events`, `watchedWallets`) via Drizzle ORM
 - Privy server SDK: Mantle wallet creation
 
-### Building — week 2+
-- `AutonomousRule.sol` + ERC-8004 NFT on Mantle (see `plans/week-2.md`)
-- Rule setup flow: NL → Privy signature → contract
-- Web dashboard (Next.js + Vercel)
+### Built — week 2
+- `AutonomousRule.sol` — deployed + verified on Mantle Sepolia (`0x7f958B9556Be6FA6Ddf876f929FEa36Df077d750`)
+- ERC-8004 agent identity — registered as agent #114 on Mantle Sepolia
+- `tali-cli rules add/list/remove` — NL → LLM parse → `setRule()` on Mantle
+- `rules` DB table + migration
+
+### Building — week 2 remaining
+- Rule execution: onchain trigger → byreal-cli → `attestExecution()`
+- Web dashboard (Next.js + Privy, Vercel)
 
 ## Competitive moat
 

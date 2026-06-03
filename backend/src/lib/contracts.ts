@@ -47,16 +47,23 @@ function getClients() {
   return { publicClient, walletClient, account };
 }
 
+// Lazy singleton — avoid creating a new HTTP transport on every read call
+let _publicClient: ReturnType<typeof createMantlePublicClient> | null = null;
 function getPublicClient() {
-  const rpcUrl = env.MANTLE_TESTNET_RPC ?? env.MANTLE_ALCHEMY_RPC;
-  return createMantlePublicClient(rpcUrl, env.MANTLE_CHAIN_ID);
+  if (!_publicClient) {
+    const rpcUrl = env.MANTLE_TESTNET_RPC ?? env.MANTLE_ALCHEMY_RPC;
+    _publicClient = createMantlePublicClient(rpcUrl, env.MANTLE_CHAIN_ID);
+  }
+  return _publicClient;
 }
 
 // ── Hash utilities ─────────────────────────────────────────────
 // Must match Solidity encoding exactly:
-//   triggerHash = keccak256(abi.encode(tokenAddress, keccak256("IN"|"OUT"|"BOTH"), threshold))
-//   actionHash  = keccak256(abi.encode(keccak256("FARM"|"SWAP"|"DCA"), targetPct, maxSlippageBps))
-// toHex(str) → 0x-prefixed UTF-8 bytes, matching Solidity's keccak256(abi.encodePacked(str))
+//   triggerHash = keccak256(abi.encode(tokenAddress, keccak256(bytes(direction)), threshold))
+//   actionHash  = keccak256(abi.encode(keccak256(bytes(actionType)), targetPct, maxSlippageBps))
+//
+// Inner hash: toHex(str) → 0x-prefixed raw UTF-8 bytes → keccak256 matches Solidity keccak256(bytes(str))
+// Outer hash: encodeAbiParameters with ABI padding matches Solidity abi.encode (NOT abi.encodePacked)
 
 export function hashTrigger(
   tokenAddress: `0x${string}`,

@@ -193,16 +193,16 @@
         "internalType": "uint256"
       },
       {
+        "name": "executionHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
         "name": "executionCount",
         "type": "uint32",
         "indexed": false,
         "internalType": "uint32"
-      },
-      {
-        "name": "executionHash",
-        "type": "bytes32",
-        "indexed": false,
-        "internalType": "bytes32"
       },
       {
         "name": "solanaTxHash",

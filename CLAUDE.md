@@ -60,8 +60,11 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 ## What Tali does now
 
 - `tali-cli networth --wallet <address>` — live Mantle balances + IDR total
+- `tali-cli rules add/list/remove` — NL rule management; `setRule()` + `deactivateRule()` on Mantle via viem WalletClient
 - `byreal-cli` — DeFi execution on Byreal/Solana
 - RPC self-poller (testnet) + Goldsky webhook handler (mainnet) — real-time onchain Transfer event ingestion
+- `AutonomousRule.sol` — deployed + verified on Mantle Sepolia (`0x7f958B9556Be6FA6Ddf876f929FEa36Df077d750`)
+- ERC-8004 agent identity — registered as agent #114 on Mantle Sepolia
 
 ## Track positioning
 
@@ -94,11 +97,14 @@ Tali is an autonomous financial agent for Southeast Asian users who live across 
 ## Current build state (as of 2026-06-04)
 
 - `tali-cli networth` — functional; queries Mantle balances + IDR total
-- `tali-cli log` / `rules` / `wallet` — stubs
+- `tali-cli rules add/list/remove` — live; NL → LLM parse → setRule() on Mantle
+- `tali-cli log` / `wallet` — stubs
+- `AutonomousRule.sol` — deployed + verified, Mantle Sepolia `0x7f958B9556Be6FA6Ddf876f929FEa36Df077d750`
+- ERC-8004 agent identity — registered, agentId=114, Mantle Sepolia
 - Mantle testnet RPC self-poller — live, writes events to unified ledger
 - Goldsky webhook handler — HMAC-verified, writes events to unified ledger (mainnet path)
-- DB schema — `users`, `events`, `watchedWallets`; migrations generated
-- Week 1 complete. Week 2 in progress.
+- DB schema — `users`, `events`, `watchedWallets`, `rules`; migrations applied
+- Week 1 complete. Week 2 contracts done. Remaining: rule-execution, web-dashboard.
 
 ## Plans folder — compound-engineering cycle
 

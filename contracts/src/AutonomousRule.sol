@@ -34,9 +34,9 @@ contract AutonomousRule {
     event RuleDeactivated(uint256 indexed ruleId, address indexed owner);
     event RuleExecuted(
         uint256 indexed ruleId,
+        bytes32 indexed executionHash, // indexed for efficient off-chain filtering (Goldsky/subgraph)
         uint32  executionCount,
-        bytes32 executionHash,
-        bytes32 solanaTxHash, // keccak256(abi.encodePacked(solanaTxSignatureBase58)) — reference only
+        bytes32 solanaTxHash, // keccak256(toHex(solanaTxSignatureBase58)) — lookup reference, full sig in Postgres
         uint256 timestamp
     );
 
@@ -82,7 +82,7 @@ contract AutonomousRule {
         require(!_attestedExecutions[executionHash], "already attested");
         _attestedExecutions[executionHash] = true;
         rule.executionCount++;
-        emit RuleExecuted(ruleId, rule.executionCount, executionHash, solanaTxHash, block.timestamp);
+        emit RuleExecuted(ruleId, executionHash, rule.executionCount, solanaTxHash, block.timestamp);
     }
 
     /// @notice Returns true if rule exists, is active flag set, and has not expired.

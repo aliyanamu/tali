@@ -1,23 +1,18 @@
 /**
  * Contract interaction helpers for AutonomousRule.sol on Mantle.
  *
- * Write calls: encodeFunctionData → Privy sendTransactionFromWallet → waitForTransactionReceipt
- * Read calls:  publicClient.readContract
+ * Write calls: WalletClient (AGENT_PRIVATE_KEY) → writeContract → waitForTransactionReceipt
+ * Read calls:  PublicClient → readContract
  *
- * NOTE (production — agentAddress):
- *   For the hackathon, attestExecution() is permissionless. In production:
- *   1. Create a dedicated Privy server wallet (AGENT_PRIVY_ID / AGENT_WALLET_ADDRESS in env)
- *   2. Register it via setAgentWallet() on Mantle's ERC-8004 Identity Registry
- *   3. Gate attestExecution() to only accept calls from that registered agentWallet
- *   The AGENT_PRIVY_ID env var is the hook for this — it's the Privy wallet used to sign all
- *   contract calls from the backend. Key never leaves Privy's split-key infrastructure.
+ * Agent wallet is a self-generated EOA (cast wallet new). Private key lives in AGENT_PRIVATE_KEY env.
+ * Production path: rotate to hardware wallet or Privy server wallet and gate attestExecution()
+ * to only accept calls from the registered agentWallet on ERC-8004.
  */
 
-import { encodeFunctionData, keccak256, toHex, encodeAbiParameters, parseAbiParameters, decodeEventLog } from 'viem';
-import type { Log } from 'viem';
+import { createWalletClient, http, keccak256, toHex, encodeAbiParameters, parseAbiParameters, decodeEventLog } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
 import { env } from './env.js';
 import { createMantlePublicClient } from './chain.js';
-import { sendTransactionFromWallet } from '../wallet/privy.js';
 import autonomousRuleAbi from '../../abi/AutonomousRule.json' with { type: 'json' };
 
 // ── Types ─────────────────────────────────────────────────────
@@ -42,9 +37,14 @@ function getContractAddress(): `0x${string}` {
   return env.AUTONOMOUS_RULE_CONTRACT as `0x${string}`;
 }
 
-function getAgentPrivyId(): string {
-  if (!env.AGENT_PRIVY_ID) throw new Error('AGENT_PRIVY_ID not set in env');
-  return env.AGENT_PRIVY_ID;
+function getClients() {
+  if (!env.AGENT_PRIVATE_KEY) throw new Error('AGENT_PRIVATE_KEY not set in env');
+  const rpcUrl = env.MANTLE_TESTNET_RPC ?? env.MANTLE_ALCHEMY_RPC;
+  const publicClient = createMantlePublicClient(rpcUrl, env.MANTLE_CHAIN_ID);
+  const account = privateKeyToAccount(env.AGENT_PRIVATE_KEY as `0x${string}`);
+  const chain = publicClient.chain;
+  const walletClient = createWalletClient({ account, chain, transport: http(rpcUrl) });
+  return { publicClient, walletClient, account };
 }
 
 function getPublicClient() {
@@ -102,20 +102,14 @@ export async function setRule(params: {
   expiry:        bigint; // unix timestamp; 0 = never
 }): Promise<bigint> {
   const contractAddress = getContractAddress();
-  const agentPrivyId    = getAgentPrivyId();
-  const publicClient    = getPublicClient();
+  const { publicClient, walletClient, account } = getClients();
 
-  const data = encodeFunctionData({
+  const hash = await walletClient.writeContract({
+    address:      contractAddress,
     abi:          autonomousRuleAbi,
     functionName: 'setRule',
     args:         [params.agentId, params.triggerHash, params.actionHash, params.expiry],
-  });
-
-  const { hash } = await sendTransactionFromWallet({
-    walletId: agentPrivyId,
-    to:       contractAddress,
-    data,
-    chainId:  env.MANTLE_CHAIN_ID,
+    account,
   });
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
@@ -143,20 +137,14 @@ export async function setRule(params: {
 /** Calls AutonomousRule.deactivateRule() on Mantle. */
 export async function deactivateRule(ruleId: bigint): Promise<`0x${string}`> {
   const contractAddress = getContractAddress();
-  const agentPrivyId    = getAgentPrivyId();
-  const publicClient    = getPublicClient();
+  const { publicClient, walletClient, account } = getClients();
 
-  const data = encodeFunctionData({
+  const hash = await walletClient.writeContract({
+    address:      contractAddress,
     abi:          autonomousRuleAbi,
     functionName: 'deactivateRule',
     args:         [ruleId],
-  });
-
-  const { hash } = await sendTransactionFromWallet({
-    walletId: agentPrivyId,
-    to:       contractAddress,
-    data,
-    chainId:  env.MANTLE_CHAIN_ID,
+    account,
   });
 
   await publicClient.waitForTransactionReceipt({ hash });
@@ -174,20 +162,14 @@ export async function attestExecution(params: {
   solanaTxHash:  `0x${string}`;
 }): Promise<`0x${string}`> {
   const contractAddress = getContractAddress();
-  const agentPrivyId    = getAgentPrivyId();
-  const publicClient    = getPublicClient();
+  const { publicClient, walletClient, account } = getClients();
 
-  const data = encodeFunctionData({
+  const hash = await walletClient.writeContract({
+    address:      contractAddress,
     abi:          autonomousRuleAbi,
     functionName: 'attestExecution',
     args:         [params.ruleId, params.executionHash, params.solanaTxHash],
-  });
-
-  const { hash } = await sendTransactionFromWallet({
-    walletId: agentPrivyId,
-    to:       contractAddress,
-    data,
-    chainId:  env.MANTLE_CHAIN_ID,
+    account,
   });
 
   await publicClient.waitForTransactionReceipt({ hash });

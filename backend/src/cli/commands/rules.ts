@@ -124,8 +124,8 @@ export const rulesCommand = new Command('rules')
           console.error('AUTONOMOUS_RULE_CONTRACT not set. Deploy the contract first and set it in .env');
           process.exit(1);
         }
-        if (!env.AGENT_PRIVY_ID) {
-          console.error('AGENT_PRIVY_ID not set. Configure the agent server wallet in .env');
+        if (!env.AGENT_PRIVATE_KEY) {
+          console.error('AGENT_PRIVATE_KEY not set. Configure the agent server wallet in .env');
           process.exit(1);
         }
 
@@ -230,8 +230,8 @@ export const rulesCommand = new Command('rules')
           console.error('AUTONOMOUS_RULE_CONTRACT not set in .env');
           process.exit(1);
         }
-        if (!env.AGENT_PRIVY_ID) {
-          console.error('AGENT_PRIVY_ID not set in .env');
+        if (!env.AGENT_PRIVATE_KEY) {
+          console.error('AGENT_PRIVATE_KEY not set in .env');
           process.exit(1);
         }
 

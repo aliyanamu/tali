@@ -1,0 +1,48 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Tali",
+  "description": "Autonomous financial agent for crypto-active Southeast Asian users. Unifies IDR net worth across Mantle wallets, watches for onchain Transfer events, and executes autonomous DeFi rules via byreal-cli on Solana/Byreal. Every agent action is attested on Mantle via AutonomousRule.sol, linked to this ERC-8004 identity.",
+  "image": "https://github.com/aliyanamu.png",
+  "active": true,
+  "services": [
+    {
+      "name": "web",
+      "endpoint": "https://github.com/aliyanamu/tali"
+    },
+    {
+      "name": "MCP",
+      "endpoint": "https://github.com/aliyanamu/tali",
+      "version": "0.1.0",
+      "skills": [
+        {
+          "name": "tali-cli",
+          "description": "Personal finance skill: IDR net worth, onchain history, autonomous rule management on Mantle",
+          "domains": ["personal-finance", "defi", "mantle"]
+        },
+        {
+          "name": "byreal-cli",
+          "description": "DeFi execution skill: yield farming, DCA, swaps on Byreal/Solana",
+          "domains": ["defi", "solana", "yield"]
+        }
+      ]
+    }
+  ],
+  "x402Support": false,
+  "supportedTrust": ["reputation"],
+  "registrations": [
+    {
+      "agentId": null,
+      "agentRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+      "network": "Mantle Sepolia Testnet",
+      "chainId": 5003,
+      "note": "Update agentId after calling register() — see docs/register-agent.md"
+    },
+    {
+      "agentId": null,
+      "agentRegistry": "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+      "network": "Mantle Mainnet",
+      "chainId": 5000,
+      "note": "Register at mainnet deploy (week 3)"
+    }
+  ]
+}

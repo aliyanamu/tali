@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { env } from '../../../lib/env.js';
 import { logger } from '../../../lib/logger.js';
 import { ingestTransfer } from '../../../services/transferIngestion.js';
+import { matchAndExecuteRules } from '../../../services/ruleExecutor.js';
 
 // Parsed once at module load — not on every request.
 const CHAIN_ID = Number(env.MANTLE_CHAIN_ID);
@@ -91,7 +92,7 @@ export async function handleGoldskyWebhook(c: Context): Promise<Response> {
           logger.warn({ txHash: row.hash, status: row.receipt_status }, 'Goldsky: skipping failed native tx');
           continue;
         }
-        await ingestTransfer({
+        const { wasNew, matchedWallets } = await ingestTransfer({
           chainId: CHAIN_ID,
           fromAddress: row.from_address.toLowerCase(),
           toAddress: row.to_address.toLowerCase(),
@@ -104,8 +105,23 @@ export async function handleGoldskyWebhook(c: Context): Promise<Response> {
           source: 'goldsky_mirror',
           rawPayload: { ...row },
         });
+
+        if (wasNew) {
+          // Non-blocking — must not delay the 200 response past Goldsky's delivery timeout
+          void matchAndExecuteRules({
+            chainId:        CHAIN_ID,
+            txHash:         row.hash,
+            fromAddress:    row.from_address.toLowerCase(),
+            toAddress:      row.to_address.toLowerCase(),
+            tokenAddress:   null,
+            amountRaw:      row.value,
+            blockTimestamp: row.block_timestamp,
+          }, matchedWallets).catch((err: unknown) =>
+            logger.error({ err, txHash: row.hash }, 'matchAndExecuteRules error (goldsky native)')
+          );
+        }
       } else {
-        await ingestTransfer({
+        const { wasNew, matchedWallets } = await ingestTransfer({
           chainId: CHAIN_ID,
           fromAddress: row.sender.toLowerCase(),
           toAddress: row.recipient.toLowerCase(),
@@ -118,6 +134,20 @@ export async function handleGoldskyWebhook(c: Context): Promise<Response> {
           source: 'goldsky_mirror',
           rawPayload: { ...row },
         });
+
+        if (wasNew) {
+          void matchAndExecuteRules({
+            chainId:        CHAIN_ID,
+            txHash:         row.transaction_hash,
+            fromAddress:    row.sender.toLowerCase(),
+            toAddress:      row.recipient.toLowerCase(),
+            tokenAddress:   row.address?.toLowerCase() ?? null,
+            amountRaw:      row.amount,
+            blockTimestamp: row.block_timestamp,
+          }, matchedWallets).catch((err: unknown) =>
+            logger.error({ err, txHash: row.transaction_hash }, 'matchAndExecuteRules error (goldsky erc20)')
+          );
+        }
       }
     }
 

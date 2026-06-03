@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { createInterface } from 'readline';
 import { z } from 'zod';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { generateObject, model } from '../../lib/llm.js';
 import { env } from '../../lib/env.js';
 import { db, schema } from '../../db/index.js';
@@ -206,14 +206,21 @@ export const rulesCommand = new Command('rules')
         }
 
         await db.insert(schema.rules).values({
-          userId:          seedUser.id,
+          userId:               seedUser.id,
           contractRuleId,
-          agentId:         env.AGENT_ERC8004_ID,
+          agentId:              env.AGENT_ERC8004_ID,
           nlText,
           triggerHash,
           actionHash,
-          contractAddress: env.AUTONOMOUS_RULE_CONTRACT!,
-          active:          true,
+          contractAddress:      env.AUTONOMOUS_RULE_CONTRACT!,
+          active:               true,
+          // Decoded params — enables rule matching without recomputing keccak256 hashes
+          triggerTokenAddress:  tokenInfo.address,
+          triggerDirection:     parsed.direction,
+          triggerThresholdRaw:  parsed.thresholdRaw,
+          actionType:           parsed.actionType,
+          actionTargetPct:      parsed.targetPct,
+          actionMaxSlippageBps: parsed.maxSlippageBps,
         });
 
         if (opts.output === 'json') {
@@ -296,5 +303,54 @@ export const rulesCommand = new Command('rules')
         } else {
           console.log(`\nRule #${contractRuleId} deactivated. tx: ${txHash}`);
         }
+      }),
+  )
+
+  // ── rules executions ─────────────────────────────────────────
+  .addCommand(
+    new Command('executions')
+      .description('Show autonomous rule execution history')
+      .option('-n, --limit <n>', 'Max rows to show', '10')
+      .option('-s, --status <status>', 'Filter by status: executing|executed|attested|failed')
+      .option('-o, --output <format>', 'Output format: table | json', 'table')
+      .action(async (opts: { limit: string; status?: string; output: string }) => {
+        const limit = Math.min(parseInt(opts.limit, 10) || 10, 100);
+        const rows = await db
+          .select({
+            id:                 schema.ruleExecutions.id,
+            status:             schema.ruleExecutions.status,
+            executionAmountUsd: schema.ruleExecutions.executionAmountUsd,
+            solanaTxSig:        schema.ruleExecutions.solanaTxSig,
+            mantleAttestTxHash: schema.ruleExecutions.mantleAttestTxHash,
+            createdAt:          schema.ruleExecutions.createdAt,
+            errorMessage:       schema.ruleExecutions.errorMessage,
+            nlText:             schema.rules.nlText,
+            triggerTxHash:      schema.ruleExecutions.triggerTxHash,
+          })
+          .from(schema.ruleExecutions)
+          .innerJoin(schema.rules, eq(schema.ruleExecutions.ruleId, schema.rules.id))
+          .where(opts.status ? eq(schema.ruleExecutions.status, opts.status) : undefined)
+          .orderBy(desc(schema.ruleExecutions.createdAt))
+          .limit(limit);
+
+        if (opts.output === 'json') {
+          process.stdout.write(JSON.stringify(rows, null, 2) + '\n');
+          return;
+        }
+
+        if (rows.length === 0) {
+          console.log('No executions found.');
+          return;
+        }
+
+        console.log(`\n${'WHEN'.padEnd(12)} ${'STATUS'.padEnd(10)} ${'USD'.padEnd(8)} RULE`);
+        console.log('─'.repeat(80));
+        for (const r of rows) {
+          const when   = r.createdAt.toISOString().slice(0, 10);
+          const usd    = r.executionAmountUsd ? `$${parseFloat(r.executionAmountUsd).toFixed(2)}` : '-';
+          const status = r.status.padEnd(10);
+          console.log(`${when.padEnd(12)} ${status} ${usd.padEnd(8)} ${r.nlText.slice(0, 40)}`);
+        }
+        console.log();
       }),
   );

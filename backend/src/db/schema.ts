@@ -104,6 +104,8 @@ export const watchedWallets = pgTable(
 // agentId:        the Mantle-issued ERC-8004 NFT token ID stored in the contract rule
 // triggerHash / actionHash: keccak256 anchors matching the on-chain struct — full params in nlText
 // contractAddress: AUTONOMOUS_RULE_CONTRACT address the rule was set on (for multi-deploy safety)
+// Decoded params (triggerToken* / action*): populated at rules add time; nullable for pre-migration rows.
+// The matcher uses these columns via a partial index — rows with null triggerTokenAddress are skipped.
 export const rules = pgTable(
   'rules',
   {
@@ -118,10 +120,39 @@ export const rules = pgTable(
     active:          boolean('active').notNull().default(true),
     createdAt:       timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     expiresAt:       timestamp('expires_at', { withTimezone: true }), // null = never expires
+    // Decoded trigger params — enables matcher SQL without recomputing keccak256 hashes
+    triggerTokenAddress:  varchar('trigger_token_address', { length: 64 }),
+    triggerDirection:     varchar('trigger_direction', { length: 4 }),    // 'IN' | 'OUT' | 'BOTH'
+    triggerThresholdRaw:  varchar('trigger_threshold_raw', { length: 80 }),
+    // Decoded action params
+    actionType:           varchar('action_type', { length: 16 }),         // 'FARM' | 'SWAP' | 'DCA'
+    actionTargetPct:      integer('action_target_pct'),                   // 1–100
+    actionMaxSlippageBps: integer('action_max_slippage_bps'),             // 0–1000
   },
   (t) => ({
     uniqueContractRule: uniqueIndex('rules_contract_rule_idx').on(t.contractAddress, t.contractRuleId),
     userActiveIdx:      index('rules_user_active_idx').on(t.userId, t.active),
+    // Partial index for rule matcher — skips null rows (pre-migration rules), avoids bool leading col
+    matcherIdx: index('rules_matcher_idx')
+      .on(t.triggerTokenAddress, t.triggerDirection)
+      .where(sql`${t.active} = true AND ${t.triggerTokenAddress} IS NOT NULL`),
+    // CHECK constraints — guard enum-like columns at DB level
+    triggerDirectionCheck: check(
+      'rules_trigger_direction_check',
+      sql`${t.triggerDirection} IS NULL OR ${t.triggerDirection} IN ('IN', 'OUT', 'BOTH')`,
+    ),
+    actionTypeCheck: check(
+      'rules_action_type_check',
+      sql`${t.actionType} IS NULL OR ${t.actionType} IN ('FARM', 'SWAP', 'DCA')`,
+    ),
+    actionTargetPctCheck: check(
+      'rules_action_target_pct_check',
+      sql`${t.actionTargetPct} IS NULL OR (${t.actionTargetPct} >= 1 AND ${t.actionTargetPct} <= 100)`,
+    ),
+    actionMaxSlippageBpsCheck: check(
+      'rules_action_max_slippage_bps_check',
+      sql`${t.actionMaxSlippageBps} IS NULL OR (${t.actionMaxSlippageBps} >= 0 AND ${t.actionMaxSlippageBps} <= 1000)`,
+    ),
   }),
 );
 
@@ -226,6 +257,43 @@ export const eventReconciliations = pgTable(
   }),
 );
 
+// ── rule_executions ───────────────────────────────────────────
+// Audit trail for every autonomous rule execution attempt.
+// Status: executing → executed (byreal-cli ok) → attested (Mantle ok) | failed
+// solanaTxSig: raw base58 Solana signature from byreal-cli stdout.
+// mantleAttestTxHash: Mantle tx hash from attestExecution() — canonical on-chain proof.
+// Idempotency: unique(ruleId, triggerTxHash) prevents double-execution on webhook retries.
+export const ruleExecutions = pgTable(
+  'rule_executions',
+  {
+    id:                  uuid('id').primaryKey().$defaultFn(() => uuidv7()),
+    ruleId:              uuid('rule_id').notNull().references(() => rules.id, { onDelete: 'cascade' }),
+    triggerTxHash:       varchar('trigger_tx_hash', { length: 66 }).notNull(),
+    chainId:             integer('chain_id').notNull(),
+    triggerAmountRaw:    varchar('trigger_amount_raw', { length: 80 }).notNull(),
+    executionAmountUsd:  numeric('execution_amount_usd', { precision: 20, scale: 6 }),
+    byreaCliCommand:     text('byreal_cli_command'),
+    byreaCliOutput:      text('byreal_cli_output'),
+    solanaTxSig:         varchar('solana_tx_sig', { length: 128 }),
+    mantleAttestTxHash:  varchar('mantle_attest_tx_hash', { length: 66 }),
+    status:              varchar('status', { length: 16 }).notNull().default('executing'),
+    errorMessage:        text('error_message'),
+    createdAt:           timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt:           timestamp('updated_at', { withTimezone: true })
+                           .notNull().defaultNow().$onUpdate(() => new Date()),
+    attestedAt:          timestamp('attested_at', { withTimezone: true }),
+  },
+  (t) => ({
+    ruleIdIdx:      index('rule_executions_rule_id_idx').on(t.ruleId),
+    // Idempotency: one execution attempt per (rule, trigger tx)
+    idempotencyIdx: uniqueIndex('rule_executions_idempotency').on(t.ruleId, t.triggerTxHash),
+    statusCheck:    check(
+      'rule_executions_status_check',
+      sql`${t.status} IN ('executing', 'executed', 'attested', 'failed')`,
+    ),
+  }),
+);
+
 // ── type exports ──────────────────────────────────────────────
 export type Network = typeof networks.$inferSelect;
 export type NewNetwork = typeof networks.$inferInsert;
@@ -243,3 +311,5 @@ export type EventReconciliation = typeof eventReconciliations.$inferSelect;
 export type NewEventReconciliation = typeof eventReconciliations.$inferInsert;
 export type Rule = typeof rules.$inferSelect;
 export type NewRule = typeof rules.$inferInsert;
+export type RuleExecution = typeof ruleExecutions.$inferSelect;
+export type NewRuleExecution = typeof ruleExecutions.$inferInsert;

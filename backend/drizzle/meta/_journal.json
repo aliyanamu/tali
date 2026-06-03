@@ -15,6 +15,13 @@
       "when": 1780656000000,
       "tag": "0001_add_rules_table",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780920000000,
+      "tag": "0002_add_rule_decoded_params_and_executions",
+      "breakpoints": true
     }
   ]
 }

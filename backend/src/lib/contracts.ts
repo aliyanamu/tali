@@ -119,7 +119,7 @@ export async function setRule(params: {
     account,
   });
 
-  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: 30_000 });
 
   // Parse ruleId from RuleSet event in receipt logs
   for (const log of receipt.logs) {
@@ -154,33 +154,49 @@ export async function deactivateRule(ruleId: bigint): Promise<`0x${string}`> {
     account,
   });
 
-  await publicClient.waitForTransactionReceipt({ hash });
+  await publicClient.waitForTransactionReceipt({ hash, timeout: 30_000 });
   return hash;
 }
 
+// Serialization queue for attestExecution — concurrent calls from the same EOA key
+// cause nonce collisions on Mantle. This queue ensures at most one attest tx is in-flight at a time.
+let _attestQueue: Promise<void> = Promise.resolve();
+
 /**
  * Calls AutonomousRule.attestExecution() on Mantle.
- * executionHash: keccak256 of execution details (ruleId + tokens + amounts + timestamp)
- * solanaTxHash:  use hashSolanaTx(solanaTxSignature) — keccak256 reference, full sig in Postgres
+ * executionHash: keccak256(abi.encode(ruleId, solanaTxHash, amountRaw)) — inputs available before the call.
+ * solanaTxHash:  use hashSolanaTx(solanaTxSignature) — keccak256 reference, full sig in Postgres.
+ * Serialized via _attestQueue to prevent nonce collisions when multiple rules fire concurrently.
  */
 export async function attestExecution(params: {
   ruleId:        bigint;
   executionHash: `0x${string}`;
   solanaTxHash:  `0x${string}`;
 }): Promise<`0x${string}`> {
-  const contractAddress = getContractAddress();
-  const { publicClient, walletClient, account } = getClients();
+  // Acquire serial slot
+  let releaseSlot!: () => void;
+  const ticket = new Promise<void>(resolve => { releaseSlot = resolve; });
+  const prev = _attestQueue;
+  _attestQueue = prev.then(() => ticket);
+  await prev;
 
-  const hash = await walletClient.writeContract({
-    address:      contractAddress,
-    abi:          autonomousRuleAbi,
-    functionName: 'attestExecution',
-    args:         [params.ruleId, params.executionHash, params.solanaTxHash],
-    account,
-  });
+  try {
+    const contractAddress = getContractAddress();
+    const { publicClient, walletClient, account } = getClients();
 
-  await publicClient.waitForTransactionReceipt({ hash });
-  return hash;
+    const hash = await walletClient.writeContract({
+      address:      contractAddress,
+      abi:          autonomousRuleAbi,
+      functionName: 'attestExecution',
+      args:         [params.ruleId, params.executionHash, params.solanaTxHash],
+      account,
+    });
+
+    await publicClient.waitForTransactionReceipt({ hash, timeout: 30_000 });
+    return hash;
+  } finally {
+    releaseSlot();
+  }
 }
 
 // ── Read functions (PublicClient) ──────────────────────────────

@@ -24,7 +24,12 @@ export interface TransferParams {
   rawPayload: Record<string, unknown>;
 }
 
-export async function ingestTransfer(params: TransferParams): Promise<boolean> {
+export interface IngestResult {
+  wasNew:         boolean;                                         // true if at least one new row was inserted
+  matchedWallets: Array<{ userId: string; address: string }>;     // wallets that matched this transfer
+}
+
+export async function ingestTransfer(params: TransferParams): Promise<IngestResult> {
   const {
     chainId,
     fromAddress,
@@ -54,7 +59,7 @@ export async function ingestTransfer(params: TransferParams): Promise<boolean> {
 
   if (matchedWallets.length === 0) {
     logger.debug({ fromAddress, toAddress, chainId }, 'transferIngestion: no watched wallet matched');
-    return false;
+    return { wasNew: false, matchedWallets: [] };
   }
 
   const asset = tokenAddress
@@ -70,7 +75,10 @@ export async function ingestTransfer(params: TransferParams): Promise<boolean> {
   const decimals = asset?.decimals ?? 18;
   const amountDecimal = rawToDecimalString(amountRaw, decimals);
 
-  await db
+  // Use RETURNING to detect genuinely new rows — onConflictDoNothing returns [] on duplicate.
+  // This distinguishes "first time we see this tx" from "Goldsky webhook retry" so callers
+  // only fire rule execution for new events.
+  const inserted = await db
     .insert(schema.onchainEvents)
     .values(
       matchedWallets.map((wallet) => {
@@ -101,12 +109,22 @@ export async function ingestTransfer(params: TransferParams): Promise<boolean> {
         };
       }),
     )
-    .onConflictDoNothing();
+    .onConflictDoNothing()
+    .returning({ id: schema.onchainEvents.id });
 
-  logger.info(
-    { wallets: matchedWallets.length, txHash, asset: asset?.code, source },
-    'Recorded transfer',
-  );
+  const wasNew = inserted.length > 0;
 
-  return true;
+  if (wasNew) {
+    logger.info(
+      { wallets: matchedWallets.length, txHash, asset: asset?.code, source },
+      'Recorded transfer',
+    );
+  } else {
+    logger.debug({ txHash, source }, 'transferIngestion: duplicate event, skipped');
+  }
+
+  return {
+    wasNew,
+    matchedWallets: matchedWallets.map(w => ({ userId: w.userId, address: w.address })),
+  };
 }
